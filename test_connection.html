@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ccc;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔍 Supabase Connection Test</h1>
+        
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="testPumps()">Check Pumps Data</button>
+        <button onclick="testOrders()">Check Orders Table</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div class="loading" id="loading">
+            <div class="test-item info">⏳ Testing...</div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script>
+        let supabaseClient = null;
+        
+        // Initialize Supabase
+        try {
+            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
+                supabaseClient = window.supabase.createClient(
+                    window.SUPABASE_URL, 
+                    window.SUPABASE_ANON_KEY
+                );
+                addResult('✅ Supabase client initialized', 'success');
+            } else {
+                addResult('❌ Supabase config missing', 'error');
+            }
+        } catch (err) {
+            addResult('❌ Failed to initialize Supabase: ' + err.message, 'error');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function addResult(message, type = 'info') {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-item ${type}`;
+            resultDiv.innerHTML = message;
+            document.getElementById('results').appendChild(resultDiv);
+        }
+
+        async function testConnection() {
+            clearResults();
+            showLoading(true);
+            
+            addResult('🔗 Testing Supabase connection...', 'info');
+            
+            if (!supabaseClient) {
+                addResult('❌ Supabase client not initialized', 'error');
+                showLoading(false);
+                return;
+            }
+
+            try {
+                // Simple connection test
+                const { data, error } = await supabaseClient
+                    .from('petrol_pumps')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    addResult('❌ Connection failed: ' + error.message, 'error');
+                    addResult('<pre>' + JSON.stringify(error, null, 2) + '</pre>', 'error');
+                } else {
+                    addResult('✅ Successfully connected to Supabase!', 'success');
+                    addResult('Database is accessible', 'success');
+                }
+            } catch (err) {
+                addResult('❌ Network error: ' + err.message, 'error');
+                addResult('Check your internet connection and Supabase URL', 'error');
+            }
+            
+            showLoading(false);
+        }
+
+        async function testPumps() {
+            clearResults();
+            showLoading(true);
+            
+            addResult('⛽ Checking petrol_pumps table...', 'info');
+            
+            if (!supabaseClient) {
+                addResult('❌ Supabase client not initialized', 'error');
+                showLoading(false);
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('petrol_pumps')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    addResult('❌ Error fetching pumps: ' + error.message, 'error');
+                    addResult('<pre>' + JSON.stringify(error, null, 2) + '</pre>', 'error');
+                } else if (!data || data.length === 0) {
+                    addResult('⚠️ No pumps found in database!', 'error');
+                    addResult('You need to add pump data to petrol_pumps table', 'error');
+                } else {
+                    addResult(`✅ Found ${data.length} pump(s) in database`, 'success');
+                    addResult('<strong>Sample pump data:</strong><pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+                }
+            } catch (err) {
+                addResult('❌ Exception: ' + err.message, 'error');
+            }
+            
+            showLoading(false);
+        }
+
+        async function testOrders() {
+            clearResults();
+            showLoading(true);
+            
+            addResult('📋 Checking orders table...', 'info');
+            
+            if (!supabaseClient) {
+                addResult('❌ Supabase client not initialized', 'error');
+                showLoading(false);
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    addResult('❌ Error fetching orders: ' + error.message, 'error');
+                    addResult('<pre>' + JSON.stringify(error, null, 2) + '</pre>', 'error');
+                } else {
+                    addResult(`✅ Orders table accessible. Found ${data.length} order(s)`, 'success');
+                    if (data.length > 0) {
+                        addResult('<strong>Recent orders:</strong><pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+                    }
+                }
+            } catch (err) {
+                addResult('❌ Exception: ' + err.message, 'error');
+            }
+            
+            showLoading(false);
+        }
+
+        // Auto-test on load
+        window.addEventListener('DOMContentLoaded', () => {
+            addResult('🚀 Page loaded. Click buttons to test.', 'info');
+        });
+    </script>
+</body>
+</html>
+

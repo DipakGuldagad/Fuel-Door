@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Petrol Pump Dashboard — Fuel@Door</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					colors: {
+						primary: '#f97316',
+						'primary-hover': '#ea580c',
+					}
+				}
+			}
+		}
+	</script>
+</head>
+
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+	<header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200">
+		<div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+			<div class="flex items-center gap-4">
+				<a href="index.html" class="flex items-center gap-2 font-bold text-xl">
+					<img src="logo.png" class="w-8 h-8 rounded" alt="Logo" />
+					Fuel@Door
+				</a>
+				<span class="text-slate-400">|</span>
+				<span class="text-slate-600 font-medium">Pump Dashboard</span>
+			</div>
+			<nav class="flex items-center gap-2">
+				<div class="px-3 py-2 text-sm text-slate-600">
+					Welcome, <span id="pumpName" class="font-medium">Pump Owner</span>
+				</div>
+				<button id="logoutBtn"
+					class="px-3 py-2 rounded-md bg-slate-900 text-white hover:bg-slate-800">Logout</button>
+			</nav>
+		</div>
+	</header>
+
+	<main class="max-w-6xl mx-auto px-4 py-8">
+		<!-- Pump Info Card -->
+		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+			<div class="flex items-start justify-between">
+				<div>
+					<div class="flex items-center gap-3 mb-4">
+						<div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+							<svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+								<path fill="currentColor"
+									d="M7 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H7Zm1 3h4v3H8V6Zm8 2h2l1 1v7a2 2 0 1 0 2 2V9.828a2 2 0 0 0-.586-1.414l-2.828-2.828A2 2 0 0 0 16 4v4Z" />
+							</svg>
+						</div>
+						<div>
+							<h1 id="companyNameDisplay" class="text-2xl font-bold text-slate-900">Loading...</h1>
+							<p id="locationDisplay" class="text-slate-600">Loading...</p>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+						<div>
+							<div class="text-slate-500 mb-1">User ID</div>
+							<div id="userIdDisplay" class="font-medium">Loading...</div>
+						</div>
+						<div>
+							<div class="text-slate-500 mb-1">Current Fuel Price</div>
+							<div id="fuelPriceDisplay" class="font-medium text-green-600">Loading...</div>
+						</div>
+						<div>
+							<div class="text-slate-500 mb-1">Status</div>
+							<div class="font-medium">
+								<span
+									class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+									Active
+								</span>
+							</div>
+						</div>
+						<div>
+							<div class="text-slate-500 mb-1">Registered</div>
+							<div id="registrationDate" class="font-medium">Loading...</div>
+						</div>
+					</div>
+				</div>
+
+				<button id="editProfileBtn"
+					class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors">
+					Edit Profile
+				</button>
+			</div>
+		</div>
+
+		<!-- Dashboard Stats -->
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-slate-500 text-sm">Total Orders</p>
+						<p class="text-2xl font-bold text-slate-900">0</p>
+					</div>
+					<div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+						<svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+							<path fill="currentColor"
+								d="M7 4V2a1 1 0 0 1 2 0v2h6V2a1 1 0 0 1 2 0v2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3zm0 2H4v12h16V6h-3v2a1 1 0 0 1-2 0V6H9v2a1 1 0 0 1-2 0V6z" />
+						</svg>
+					</div>
+				</div>
+			</div>
+
+			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-slate-500 text-sm">Pending Orders</p>
+						<p class="text-2xl font-bold text-slate-900">0</p>
+					</div>
+					<div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+						<svg class="w-6 h-6 text-orange-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+							<path fill="currentColor"
+								d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+						</svg>
+					</div>
+				</div>
+			</div>
+
+			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-slate-500 text-sm">Revenue (This Month)</p>
+						<p class="text-2xl font-bold text-slate-900">₹0</p>
+					</div>
+					<div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+						<svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+							<path fill="currentColor"
+								d="M7 15h2c0 1.08 1.37 2 3 2s3-.92 3-2c0-1.1-1.04-1.5-3.24-2.03C9.64 12.44 7 11.78 7 9c0-1.79 1.47-3.31 3.5-3.82V3h3v2.18C15.53 5.69 17 7.21 17 9h-2c0-1.08-1.37-2-3-2s-3 .92-3 2c0 1.1 1.04 1.5 3.24 2.03C14.36 11.56 17 12.22 17 15c0 1.79-1.47 3.31-3.5 3.82V21h-3v-2.18C8.47 18.31 7 16.79 7 15z" />
+						</svg>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Assigned Orders Section -->
+		<div class="bg-white rounded-xl shadow-sm border border-slate-200">
+			<div class="p-6 border-b border-slate-200">
+				<div class="flex items-center justify-between">
+					<h2 class="text-xl font-semibold text-slate-900">Assigned Orders</h2>
+					<div class="flex items-center gap-2">
+						<div id="realtimeStatus" class="flex items-center gap-1 text-sm text-slate-500">
+							<div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+							<span>Connecting...</span>
+						</div>
+						<button id="refreshOrders"
+							class="px-3 py-1 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors">
+							Refresh
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="p-6">
+				<div id="ordersContainer">
+					<div id="loadingOrders" class="text-center py-12">
+						<div
+							class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4">
+						</div>
+						<p class="text-slate-600">Loading orders...</p>
+					</div>
+
+					<div id="noOrders" class="text-center py-12 hidden">
+						<div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg class="w-8 h-8 text-slate-400" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+								<path fill="currentColor"
+									d="M7 4V2a1 1 0 0 1 2 0v2h6V2a1 1 0 0 1 2 0v2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3zm0 2H4v12h16V6h-3v2a1 1 0 0 1-2 0V6H9v2a1 1 0 0 1-2 0V6z" />
+							</svg>
+						</div>
+						<h3 class="text-lg font-medium text-slate-900 mb-2">No orders assigned yet</h3>
+						<p class="text-slate-500">Orders assigned to your pump will appear here. Check back later or
+							refresh the page.</p>
+					</div>
+
+					<div id="ordersList" class="space-y-4 hidden">
+						<!-- Orders will be dynamically populated here -->
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+	<script src="config.js"></script>
+	<script>
+			(function () {
+				// Initialize Supabase client
+				const supa = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+				if (!supa) {
+					alert('Supabase not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in config.js');
+					return;
+				}
+
+				// DOM Elements
+				const pumpName = document.getElementById('pumpName');
+				const companyNameDisplay = document.getElementById('companyNameDisplay');
+				const locationDisplay = document.getElementById('locationDisplay');
+				const userIdDisplay = document.getElementById('userIdDisplay');
+				const fuelPriceDisplay = document.getElementById('fuelPriceDisplay');
+				const registrationDate = document.getElementById('registrationDate');
+				const logoutBtn = document.getElementById('logoutBtn');
+				const editProfileBtn = document.getElementById('editProfileBtn');
+				const refreshOrdersBtn = document.getElementById('refreshOrders');
+				const realtimeStatus = document.getElementById('realtimeStatus');
+				const loadingOrders = document.getElementById('loadingOrders');
+				const noOrders = document.getElementById('noOrders');
+				const ordersList = document.getElementById('ordersList');
+
+				// Constants
+				const PETROL_PUMPS_TABLE = 'petrol_pumps';
+				const ORDERS_TABLE = 'orders';
+
+				// Global variables
+				let currentPumpId = null;
+				let realtimeChannel = null;
+
+				// Check authentication and load pump data
+				async function loadPumpDashboard() {
+					const pumpAuth = localStorage.getItem('pumpAuth');
+
+					if (!pumpAuth) {
+						// Redirect to login if not authenticated
+						window.location.href = 'pump.html';
+						return;
+					}
+
+					try {
+						const auth = JSON.parse(pumpAuth);
+
+						// Check if login is still valid (24 hours)
+						if (Date.now() - auth.loginTime > 86400000) {
+							localStorage.removeItem('pumpAuth');
+							window.location.href = 'pump.html';
+							return;
+						}
+
+						// Load pump data from Supabase
+						console.log('Fetching pump data for user_id:', auth.userId);
+						const { data: pumpData, error } = await supa
+							.from(PETROL_PUMPS_TABLE)
+							.select('*')
+							.eq('user_id', auth.userId)
+							.single();
+
+						if (error || !pumpData) {
+							console.error('Error loading pump data:', error);
+							throw new Error('Unable to load pump data: ' + (error?.message || 'Pump not found'));
+						}
+
+						// Store current pump ID for order filtering
+						currentPumpId = pumpData.id;
+						console.log('Loaded pump ID:', currentPumpId);
+						console.log('Pump details:', {
+							id: pumpData.id,
+							user_id: pumpData.user_id,
+							company_name: pumpData.company_name,
+							location: pumpData.location
+						});
+
+						// Update UI with pump data
+						pumpName.textContent = pumpData.owner_name;
+						companyNameDisplay.textContent = pumpData.company_name;
+						locationDisplay.textContent = pumpData.location;
+						userIdDisplay.textContent = pumpData.user_id;
+						fuelPriceDisplay.textContent = `₹${pumpData.fuel_price}/L`;
+
+						// Format registration date
+						const regDate = new Date(pumpData.created_at);
+						registrationDate.textContent = regDate.toLocaleDateString();
+
+						// Load assigned orders
+						await loadAssignedOrders();
+
+						// Set up realtime subscription
+						setupRealtimeSubscription();
+
+					} catch (error) {
+						console.error('Dashboard load error:', error);
+						alert('Unable to load dashboard. Please login again.');
+						localStorage.removeItem('pumpAuth');
+						window.location.href = 'pump.html';
+					}
+				}
+
+				// Load assigned orders for the current pump
+				async function loadAssignedOrders() {
+					if (!currentPumpId) {
+						console.error('No pump ID available for loading orders');
+						showErrorState('Unable to load orders: No pump ID');
+						return;
+					}
+
+					showLoadingState();
+
+					try {
+						console.log('🔍 Loading orders...');
+						console.log('   - Pump ID:', currentPumpId);
+						console.log('   - Pump ID type:', typeof currentPumpId);
+						console.log('   - Table:', ORDERS_TABLE);
+						console.log('   - Filter: pump_id =', currentPumpId);
+
+						const { data: orders, error } = await supa
+							.from(ORDERS_TABLE)
+							.select('*')
+							.eq('pump_id', currentPumpId)
+							.order('created_at', { ascending: false });
+
+						if (error) {
+							console.error('❌ Supabase query error:', error);
+							console.error('   - Code:', error.code);
+							console.error('   - Message:', error.message);
+							console.error('   - Details:', error.details);
+							throw new Error(error.message);
+						}
+
+						console.log('✅ Query executed successfully');
+						console.log('📊 Orders found:', orders?.length || 0);
+
+						if (orders && orders.length > 0) {
+							console.log('📦 Sample order data:');
+							console.log('   - Order ID:', orders[0].id);
+							console.log('   - Pump ID:', orders[0].pump_id);
+							console.log('   - Customer:', orders[0].customer_name);
+							console.log('   - Fuel:', orders[0].fuel_type);
+							console.log('   - Status:', orders[0].status);
+							console.log('   - Full order:', orders[0]);
+						} else {
+							console.warn('⚠️ No orders found for this pump');
+							console.warn('   - Checking if pump ID exists in database...');
+
+							// Debug: Check all orders to see what pump IDs exist
+							const { data: allOrders } = await supa.from(ORDERS_TABLE).select('id, pump_id, customer_name');
+							console.log('   - Total orders in database:', allOrders?.length || 0);
+							if (allOrders && allOrders.length > 0) {
+								console.log('   - Pump IDs found in orders:', [...new Set(allOrders.map(o => o.pump_id))]);
+							}
+						}
+
+						displayOrders(orders || []);
+
+					} catch (error) {
+						console.error('❌ Error loading orders:', error);
+						showErrorState('Failed to load orders: ' + error.message);
+					}
+				}
+
+				// Display orders in the UI
+				function displayOrders(orders) {
+					hideLoadingState();
+
+					if (orders.length === 0) {
+						showNoOrdersState();
+						return;
+					}
+
+					// Clear existing orders
+					ordersList.innerHTML = '';
+
+					// Create order cards
+					orders.forEach(order => {
+						const orderCard = createOrderCard(order);
+						ordersList.appendChild(orderCard);
+					});
+
+					// Show orders list
+					ordersList.classList.remove('hidden');
+					noOrders.classList.add('hidden');
+				}
+
+				// Create an order card element
+				function createOrderCard(order) {
+					const card = document.createElement('div');
+					card.className = 'bg-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-md transition-shadow';
+					card.id = `order-${order.id}`;
+
+					// Format order date
+					const orderDate = new Date(order.created_at);
+					const formattedDate = orderDate.toLocaleDateString('en-IN', {
+						day: 'numeric',
+						month: 'short',
+						year: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
+					});
+
+					// Status color mapping
+					const statusColors = {
+						pending: 'bg-yellow-100 text-yellow-800',
+						confirmed: 'bg-blue-100 text-blue-800',
+						in_progress: 'bg-purple-100 text-purple-800',
+						delivered: 'bg-green-100 text-green-800',
+						cancelled: 'bg-red-100 text-red-800'
+					};
+
+					const statusColor = statusColors[order.status] || 'bg-gray-100 text-gray-800';
+
+					card.innerHTML = `
+		<div class="flex items-start justify-between mb-4">
+			<div>
+				<h3 class="text-lg font-semibold text-slate-900">${escapeHtml(order.customer_name || 'Customer')}</h3>
+				<p class="text-slate-600">${escapeHtml(order.customer_mobile || 'No phone')}</p>
+			</div>
+			<div class="text-right">
+				<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
+					${order.status.replace('_', ' ').toUpperCase()}
+				</span>
+				<p class="text-xs text-slate-500 mt-1">Order #${order.id}</p>
+			</div>
+		</div>
+		
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+			<div class="bg-white rounded-lg p-3">
+				<div class="text-xs text-slate-500 mb-1">Fuel Order</div>
+				<div class="font-medium">${escapeHtml(order.fuel_type || 'N/A')} • ${order.quantity || 0} ${escapeHtml(order.unit || 'L')}</div>
+				<div class="text-sm text-slate-600">₹${order.price_per_liter || 0}/L</div>
+			</div>
+			<div class="bg-white rounded-lg p-3">
+				<div class="text-xs text-slate-500 mb-1">Total Amount</div>
+				<div class="font-medium text-green-600">₹${order.total_amount || 0}</div>
+				<div class="text-xs text-slate-500">Delivery: ₹${order.delivery_fee || 49}</div>
+			</div>
+		</div>
+		
+		<div class="bg-white rounded-lg p-3 mb-4">
+			<div class="text-xs text-slate-500 mb-1">Delivery Address</div>
+			<div class="font-medium text-sm">${escapeHtml(order.customer_location || 'No address')}</div>
+			${order.landmark ? `<div class="text-xs text-slate-600">Landmark: ${escapeHtml(order.landmark)}</div>` : ''}
+			${order.pincode ? `<div class="text-xs text-slate-600">Pincode: ${escapeHtml(order.pincode)}</div>` : ''}
+			${order.delivery_time ? `<div class="text-xs text-slate-600">Preferred time: ${escapeHtml(order.delivery_time)}</div>` : ''}
+		</div>
+		
+		<div class="flex items-center justify-between text-sm text-slate-500">
+			<span>Ordered: ${formattedDate}</span>
+			<div class="flex gap-2">
+				${order.status === 'pending' ? '<button class="confirm-order px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">Confirm Order</button>' : ''}
+				<button class="contact-customer px-3 py-1 bg-primary text-white rounded text-xs hover:bg-primary-hover">Contact Customer</button>
+			</div>
+		</div>
+	`;
+
+					// Add event listeners for buttons
+					const confirmBtn = card.querySelector('.confirm-order');
+					const contactBtn = card.querySelector('.contact-customer');
+
+					if (confirmBtn) {
+						confirmBtn.addEventListener('click', () => confirmOrder(order.id));
+					}
+
+					if (contactBtn) {
+						contactBtn.addEventListener('click', () => contactCustomer(order.customer_mobile, order.customer_name));
+					}
+
+					return card;
+				}
+
+				// Confirm an order
+				async function confirmOrder(orderId) {
+					try {
+						const { error } = await supa
+							.from(ORDERS_TABLE)
+							.update({ status: 'confirmed' })
+							.eq('id', orderId);
+
+						if (error) throw error;
+
+						// The realtime subscription will update the UI automatically
+
+					} catch (error) {
+						console.error('Error confirming order:', error);
+						alert('Failed to confirm order: ' + error.message);
+					}
+				}
+
+				// Contact customer (opens phone dialer)
+				function contactCustomer(mobile, name) {
+					if (!mobile) {
+						alert('No phone number available for this customer');
+						return;
+					}
+
+					const confirmed = confirm(`Call ${name || 'customer'} at ${mobile}?`);
+					if (confirmed) {
+						window.open(`tel:${mobile}`);
+					}
+				}
+
+				// Setup realtime subscription for order changes
+				function setupRealtimeSubscription() {
+					if (realtimeChannel) {
+						realtimeChannel.unsubscribe();
+					}
+
+					realtimeChannel = supa
+						.channel('orders-changes')
+						.on(
+							'postgres_changes',
+							{
+								event: '*',
+								schema: 'public',
+								table: ORDERS_TABLE,
+								filter: `pump_id=eq.${currentPumpId}`
+							},
+							(payload) => {
+								console.log('Order change:', payload);
+								handleOrderChange(payload);
+							}
+						)
+						.subscribe((status) => {
+							updateRealtimeStatus(status);
+						});
+				}
+
+				// Handle realtime order changes
+				function handleOrderChange(payload) {
+					switch (payload.eventType) {
+						case 'INSERT':
+							// New order assigned to this pump
+							addNewOrderToUI(payload.new);
+							break;
+						case 'UPDATE':
+							// Existing order updated
+							updateOrderInUI(payload.new);
+							break;
+						case 'DELETE':
+							// Order removed/cancelled
+							removeOrderFromUI(payload.old.id);
+							break;
+					}
+				}
+
+				// Add new order to UI
+				function addNewOrderToUI(order) {
+					// Hide no orders state if shown
+					noOrders.classList.add('hidden');
+					ordersList.classList.remove('hidden');
+
+					// Create and insert new order card at the top
+					const newOrderCard = createOrderCard(order);
+					newOrderCard.classList.add('animate-pulse');
+					ordersList.insertBefore(newOrderCard, ordersList.firstChild);
+
+					// Remove pulse animation after a brief moment
+					setTimeout(() => {
+						newOrderCard.classList.remove('animate-pulse');
+						newOrderCard.classList.add('ring-2', 'ring-primary', 'ring-opacity-50');
+						setTimeout(() => {
+							newOrderCard.classList.remove('ring-2', 'ring-primary', 'ring-opacity-50');
+						}, 2000);
+					}, 1000);
+				}
+
+				// Update existing order in UI
+				function updateOrderInUI(order) {
+					const existingCard = document.getElementById(`order-${order.id}`);
+					if (existingCard) {
+						const newCard = createOrderCard(order);
+						existingCard.replaceWith(newCard);
+
+						// Add brief highlight effect
+						newCard.classList.add('ring-2', 'ring-blue-400', 'ring-opacity-50');
+						setTimeout(() => {
+							newCard.classList.remove('ring-2', 'ring-blue-400', 'ring-opacity-50');
+						}, 1500);
+					}
+				}
+
+				// Remove order from UI
+				function removeOrderFromUI(orderId) {
+					const orderCard = document.getElementById(`order-${orderId}`);
+					if (orderCard) {
+						orderCard.style.transition = 'opacity 0.3s ease';
+						orderCard.style.opacity = '0.5';
+						setTimeout(() => {
+							orderCard.remove();
+
+							// Check if no orders left
+							if (ordersList.children.length === 0) {
+								showNoOrdersState();
+							}
+						}, 300);
+					}
+				}
+
+				// Update realtime connection status
+				function updateRealtimeStatus(status) {
+					const statusElement = realtimeStatus.querySelector('span');
+					const dotElement = realtimeStatus.querySelector('div');
+
+					switch (status) {
+						case 'SUBSCRIBED':
+							statusElement.textContent = 'Live updates on';
+							dotElement.className = 'w-2 h-2 bg-green-400 rounded-full';
+							break;
+						case 'CHANNEL_ERROR':
+							statusElement.textContent = 'Connection error';
+							dotElement.className = 'w-2 h-2 bg-red-400 rounded-full';
+							break;
+						case 'TIMED_OUT':
+							statusElement.textContent = 'Connection timeout';
+							dotElement.className = 'w-2 h-2 bg-yellow-400 rounded-full';
+							break;
+						default:
+							statusElement.textContent = 'Connecting...';
+							dotElement.className = 'w-2 h-2 bg-gray-400 rounded-full';
+					}
+				}
+
+				// UI state management functions
+				function showLoadingState() {
+					loadingOrders.classList.remove('hidden');
+					noOrders.classList.add('hidden');
+					ordersList.classList.add('hidden');
+				}
+
+				function hideLoadingState() {
+					loadingOrders.classList.add('hidden');
+				}
+
+				function showNoOrdersState() {
+					hideLoadingState();
+					noOrders.classList.remove('hidden');
+					ordersList.classList.add('hidden');
+				}
+
+				function showErrorState(message) {
+					hideLoadingState();
+					ordersList.innerHTML = `<div class="text-center py-12 text-red-600">${message}</div>`;
+					ordersList.classList.remove('hidden');
+					noOrders.classList.add('hidden');
+				}
+
+				// Utility function to escape HTML
+				function escapeHtml(text) {
+					const div = document.createElement('div');
+					div.textContent = text;
+					return div.innerHTML;
+				}
+
+				// Logout functionality
+				function logout() {
+					if (realtimeChannel) {
+						realtimeChannel.unsubscribe();
+					}
+					localStorage.removeItem('pumpAuth');
+					window.location.href = 'pump.html';
+				}
+
+				// Event listeners
+				logoutBtn.addEventListener('click', logout);
+				editProfileBtn.addEventListener('click', () => {
+					alert('Edit profile feature coming soon!');
+				});
+				refreshOrdersBtn.addEventListener('click', loadAssignedOrders);
+
+				// Initialize dashboard on page load
+				loadPumpDashboard();
+
+				// Cleanup on page unload
+				window.addEventListener('beforeunload', () => {
+					if (realtimeChannel) {
+						realtimeChannel.unsubscribe();
+					}
+				});
+
+			})();
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Supabase Connection</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h1 class="text-2xl font-bold mb-4">Supabase Connection Test</h1>
+    <div id="status" class="mb-4 p-4 rounded bg-gray-50">
+        Testing connection...
+    </div>
+    <button id="testConnection" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        Test Connection
+    </button>
+    <button id="createTable" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2">
+        Create Table
+    </button>
+    <button id="testInsert" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2">
+        Test Insert
+    </button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const status = document.getElementById('status');
+const testConnectionBtn = document.getElementById('testConnection');
+const createTableBtn = document.getElementById('createTable');
+const testInsertBtn = document.getElementById('testInsert');
+
+// Initialize Supabase
+const supa = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+function updateStatus(message, type = 'info') {
+    const colors = {
+        success: 'bg-green-100 text-green-800 border-green-300',
+        error: 'bg-red-100 text-red-800 border-red-300',
+        info: 'bg-blue-100 text-blue-800 border-blue-300',
+        warning: 'bg-yellow-100 text-yellow-800 border-yellow-300'
+    };
+    
+    status.className = `mb-4 p-4 rounded border ${colors[type]}`;
+    status.innerHTML = message;
+}
+
+// Test connection
+testConnectionBtn.addEventListener('click', async () => {
+    try {
+        updateStatus('Testing connection...', 'info');
+        
+        if (!supa) {
+            throw new Error('Supabase client not initialized');
+        }
+        
+        // Try a simple query
+        const { data, error } = await supa.from('petrol_pumps').select('count').limit(1);
+        
+        if (error) {
+            if (error.message.includes('relation "public.petrol_pumps" does not exist')) {
+                updateStatus('✅ Connection successful! ❌ Table does not exist yet. Click "Create Table" to set it up.', 'warning');
+            } else {
+                throw error;
+            }
+        } else {
+            updateStatus('✅ Connection successful! ✅ Table exists!', 'success');
+        }
+    } catch (error) {
+        updateStatus(`❌ Connection failed: ${error.message}`, 'error');
+        console.error('Connection test error:', error);
+    }
+});
+
+// Create table
+createTableBtn.addEventListener('click', async () => {
+    try {
+        updateStatus('Creating table...', 'info');
+        
+        // Note: This requires service role key to work via client
+        // For security, this should be done via SQL Editor instead
+        updateStatus('⚠️ Table creation should be done via Supabase SQL Editor for security reasons. Please use the supabase_setup.sql file.', 'warning');
+        
+    } catch (error) {
+        updateStatus(`❌ Table creation failed: ${error.message}`, 'error');
+        console.error('Table creation error:', error);
+    }
+});
+
+// Test insert
+testInsertBtn.addEventListener('click', async () => {
+    try {
+        updateStatus('Testing insert...', 'info');
+        
+        const testData = {
+            user_id: 'TEST-' + Date.now(),
+            company_name: 'Test Petroleum',
+            location: 'Test Location',
+            owner_name: 'Test Owner',
+            owner_mobile: '9876543210',
+            license_number: 'TEST-LICENSE-001',
+            fuel_price: 105.50,
+            password_hash: 'testhash123',
+            status: 'active'
+        };
+        
+        const { data, error } = await supa
+            .from('petrol_pumps')
+            .insert([testData])
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        updateStatus(`✅ Insert successful! Created record: ${JSON.stringify(data[0], null, 2)}`, 'success');
+        
+    } catch (error) {
+        updateStatus(`❌ Insert failed: ${error.message}`, 'error');
+        console.error('Insert test error:', error);
+    }
+});
+
+// Auto-test on load
+window.addEventListener('load', () => {
+    testConnectionBtn.click();
+});
+</script>
+</body>
+</html>

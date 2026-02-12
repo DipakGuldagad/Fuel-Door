@@ -1,0 +1,330 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — Fuel@Door</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="login-page">
+    <header class="site-header">
+        <div class="container">
+            <div class="brand"><img src="logo.png" alt="Fuel@Door logo" class="brand-logo" />Fuel@Door</div>
+            <nav class="nav">
+                <a class="nav-link" href="index.html">Home</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="container narrow">
+                <h1 class="section-title">Login / Registration</h1>
+                <p class="section-subtitle">Enter your details to continue</p>
+
+                <form id="loginForm" novalidate>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="mobile">Mobile Number</label>
+                            <input type="tel" id="mobile" name="mobile" placeholder="10-digit mobile number"
+                                maxlength="10" required />
+                            <small class="error" id="mobileError"></small>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="pan">PAN Card Number</label>
+                            <input type="text" id="pan" name="pan" placeholder="ABCDE1234F" maxlength="10" required />
+                            <small class="hint">Format: 5 letters, 4 digits, 1 letter</small>
+                            <small class="error" id="panError"></small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="button button-primary button-lg">Login</button>
+                        <a href="index.html" class="button">Cancel</a>
+                    </div>
+
+                    <div id="formSuccess" class="success" role="status" aria-live="polite"></div>
+                </form>
+
+                <!-- Greeting Section (Hidden by default) -->
+                <div id="greetingSection" class="greeting-section hidden">
+                    <div class="greeting-content">
+                        <div class="greeting-icon">👋</div>
+                        <h2 id="greetingName" class="greeting-name">Welcome!</h2>
+                        <p class="greeting-message">Your profile has been loaded successfully</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Multi-step Order Process - Hidden by default, shown after login -->
+        <section class="order-process" id="orderProcess" style="display:none">
+            <div class="container">
+
+                <!-- Step Navigation -->
+                <div class="order-steps">
+                    <div class="step-nav">
+                        <div class="step-item active" data-step="1">
+                            <div class="step-circle">1</div>
+                            <span class="step-label">Location</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step-item" data-step="2">
+                            <div class="step-circle">2</div>
+                            <span class="step-label">Fuel Type</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step-item" data-step="3">
+                            <div class="step-circle">3</div>
+                            <span class="step-label">Confirm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Location Selection -->
+                <div id="step1" class="step-content active">
+                    <div class="step-container">
+                        <div class="step-header">
+                            <div class="step-icon">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="currentColor"
+                                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                </svg>
+                            </div>
+                            <h2>Select Your Location</h2>
+                            <p>We'll find the nearest petrol pump for you</p>
+                        </div>
+
+                        <!-- Current Location Option -->
+                        <div class="location-options">
+                            <div class="location-card" id="useCurrentLocation">
+                                <div class="location-card-content">
+                                    <div class="location-icon">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill="currentColor"
+                                                d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+                                        </svg>
+                                    </div>
+                                    <div class="location-text">
+                                        <h3>Use Current Location</h3>
+                                        <p>Get your exact location automatically</p>
+                                    </div>
+                                </div>
+                                <button class="button button-primary">Get Location</button>
+                            </div>
+
+
+                            <!-- Manual Address Entry -->
+                            <div class="location-card">
+                                <div class="location-card-content">
+                                    <div class="location-icon">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill="currentColor"
+                                                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                        </svg>
+                                    </div>
+                                    <div class="location-text">
+                                        <h3>Enter Address Manually</h3>
+                                        <p>Type your delivery address</p>
+                                    </div>
+                                </div>
+
+                                <div class="form-field">
+                                    <label for="manualAddress">Delivery Address</label>
+                                    <textarea id="manualAddress"
+                                        class="mt-1 w-full h-20 rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-200 resize-none"
+                                        placeholder="Enter your complete delivery address..." rows="3"></textarea>
+                                    <button id="searchAddress" class="button button-primary">Search This
+                                        Address</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Location Display -->
+                        <div id="locationDisplay" class="location-display hidden">
+                            <div class="success-icon">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                </svg>
+                            </div>
+                            <div class="location-info">
+                                <h3>Location Selected</h3>
+                                <p id="selectedAddress"></p>
+                                <small id="coordinates"></small>
+                            </div>
+                            <button id="changeLocation" class="button">Change</button>
+                        </div>
+
+                        <!-- Available Pumps Display -->
+                        <div id="nearbyPumps" class="nearby-pumps hidden">
+                            <h3>Nearby Petrol Pumps</h3>
+                            <div id="pumpsList" class="pumps-list"></div>
+                        </div>
+
+                        <!-- Continue Button -->
+                        <div class="step-actions">
+                            <button id="continueToFuel" class="button button-primary button-lg" disabled>
+                                Continue to Fuel Selection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Fuel Selection -->
+                <div id="step2" class="step-content">
+                    <div class="step-container">
+                        <div class="step-header">
+                            <div class="step-icon">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="currentColor"
+                                        d="M7 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H7Zm1 3h4v3H8V6Zm8 2h2l1 1v7a2 2 0 1 0 2 2V9.828a2 2 0 0 0-.586-1.414l-2.828-2.828A2 2 0 0 0 16 4v4Z" />
+                                </svg>
+                            </div>
+                            <h2>Select Fuel Type & Quantity</h2>
+                            <p>Choose your fuel type or EV charging and desired quantity</p>
+                        </div>
+
+                        <!-- Assigned Pump Info -->
+                        <div id="assignedPumpInfo" class="assigned-pump">
+                            <h3>Assigned Petrol Pump</h3>
+                            <div id="pumpDetails">
+                                <!-- Pump details will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Fuel Types -->
+                        <div class="fuel-selection">
+                            <div class="fuel-options">
+                                <div class="fuel-option" data-type="petrol" data-price="105.50">
+                                    <div class="fuel-info">
+                                        <h3>Petrol</h3>
+                                        <p>Premium quality petrol</p>
+                                    </div>
+                                    <div class="fuel-price">
+                                        <span>₹<span id="petrolPrice">105.50</span>/L</span>
+                                    </div>
+                                </div>
+
+                                <div class="fuel-option" data-type="diesel" data-price="92.00">
+                                    <div class="fuel-info">
+                                        <h3>Diesel</h3>
+                                        <p>High quality diesel</p>
+                                    </div>
+                                    <div class="fuel-price">
+                                        <span>₹<span id="dieselPrice">92.00</span>/L</span>
+                                    </div>
+                                </div>
+
+                                <div class="fuel-option" data-type="ev" data-price="12.00" data-unit="kWh">
+                                    <div class="fuel-info">
+                                        <h3>EV Charging</h3>
+                                        <p>Electric vehicle charging</p>
+                                    </div>
+                                    <div class="fuel-price">
+                                        <span>₹<span id="evPrice">12.00</span>/kWh</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quantity Selection -->
+                        <div class="quantity-selection">
+                            <div class="form-field">
+                                <label for="quantityInput">Quantity <span id="quantityUnit">(Liters)</span></label>
+                                <div class="quantity-controls">
+                                    <button id="decreaseQty" class="qty-btn">-</button>
+                                    <input id="quantityInput" type="number" value="10" min="5" max="100">
+                                    <button id="increaseQty" class="qty-btn">+</button>
+                                </div>
+                                <small class="hint" id="quantityHint">Minimum 5L, Maximum 100L</small>
+                            </div>
+
+                            <!-- Preset Quantities -->
+                            <div class="preset-quantities">
+                                <button class="preset-qty" data-qty="10">10L</button>
+                                <button class="preset-qty" data-qty="20">20L</button>
+                                <button class="preset-qty" data-qty="50">50L</button>
+                            </div>
+                        </div>
+
+                        <!-- Price Summary -->
+                        <div id="priceSummary" class="price-summary">
+                            <div class="price-row">
+                                <span>Fuel Cost:</span>
+                                <span id="fuelCost">₹0</span>
+                            </div>
+                            <div class="price-row">
+                                <span>Delivery Fee:</span>
+                                <span>₹49</span>
+                            </div>
+                            <div class="price-row total">
+                                <span>Total:</span>
+                                <span id="totalCost">₹49</span>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="step-actions">
+                            <button id="backToLocation" class="button">Back</button>
+                            <button id="continueToConfirm" class="button button-primary">Continue</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirmation -->
+                <div id="step3" class="step-content">
+                    <div class="step-container">
+                        <div class="step-header">
+                            <div class="step-icon success">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                </svg>
+                            </div>
+                            <h2>Confirm Your Order</h2>
+                            <p>Review your order details before confirming</p>
+                        </div>
+
+                        <div id="orderSummary" class="order-summary">
+                            <!-- Order details will be populated here -->
+                        </div>
+
+                        <div class="step-actions">
+                            <button id="backToFuel" class="button">Back</button>
+                            <button id="placeOrder" class="button button-primary">Place Order</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Loading Modal -->
+        <div id="loadingModal" class="loading-modal hidden">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <h3>Finding Nearest Pump</h3>
+                <p id="loadingMessage">Getting your location...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p> <span id="year"></span> Fuel@Door. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

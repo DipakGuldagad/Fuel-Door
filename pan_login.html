@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel@Door - Partner Login</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="pan_login.css">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="glass-card">
+            <div class="logo-area">
+                <img src="logo.png" alt="Fuel@Door Logo" class="logo">
+                <h1>Partner Login</h1>
+                <p>Secure login with PAN Card</p>
+            </div>
+
+            <form id="pan-login-form">
+                <div class="input-group">
+                    <label for="pan-number">PAN Number</label>
+                    <input type="text" id="pan-number" placeholder="ABCDE1234F" maxlength="10" required
+                        autocomplete="off">
+                    <span class="validation-icon"></span>
+                </div>
+
+                <div class="input-group hidden" id="manual-location-group">
+                    <label for="manual-location">Current Location</label>
+                    <input type="text" id="manual-location" placeholder="e.g. Andheri West, Mumbai" autocomplete="off">
+                </div>
+
+                <div class="status-message" id="status-message"></div>
+
+                <button type="submit" id="login-btn">
+                    <span class="btn-text">Verify & Login</span>
+                    <div class="loader" id="loader"></div>
+                </button>
+            </form>
+
+            <div class="footer-text">
+                <p>By logging in, you agree to share your location for security purposes.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config -->
+    <script src="config.js"></script>
+    <!-- Login Logic -->
+    <script src="pan_login.js"></script>
+</body>
+
+</html>

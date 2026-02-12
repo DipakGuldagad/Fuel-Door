@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Orders - Fuel@Door</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #f97316;
+            padding-bottom: 10px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-left: 4px solid #2196F3;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            padding: 10px;
+            border-left: 4px solid #f44336;
+            margin: 10px 0;
+        }
+        .success {
+            background: #e8f5e9;
+            padding: 10px;
+            border-left: 4px solid #4caf50;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f97316;
+            color: white;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        button {
+            background: #f97316;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #ea580c;
+        }
+        .match {
+            color: green;
+            font-weight: bold;
+        }
+        .no-match {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Order Verification Tool - Fuel@Door</h1>
+    <p>This tool helps verify that orders are correctly linked to pumps.</p>
+    
+    <div class="section">
+        <h2>1. Check Supabase Connection</h2>
+        <div id="connectionStatus"></div>
+        <button onclick="testConnection()">Test Connection</button>
+    </div>
+    
+    <div class="section">
+        <h2>2. View All Pumps</h2>
+        <div id="pumpsList"></div>
+        <button onclick="loadPumps()">Load All Pumps</button>
+    </div>
+    
+    <div class="section">
+        <h2>3. View All Orders</h2>
+        <div id="ordersList"></div>
+        <button onclick="loadOrders()">Load All Orders</button>
+    </div>
+    
+    <div class="section">
+        <h2>4. Check Order-Pump Matching</h2>
+        <div id="matchingResults"></div>
+        <button onclick="checkMatching()">Check Matching</button>
+    </div>
+    
+    <div class="section">
+        <h2>5. Create Test Order</h2>
+        <div id="testOrderResults"></div>
+        <button onclick="createTestOrder()">Create Test Order</button>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+        
+        async function testConnection() {
+            const statusDiv = document.getElementById('connectionStatus');
+            try {
+                const { data, error } = await supabase.from('petrol_pumps').select('count', { count: 'exact' });
+                if (error) throw error;
+                statusDiv.innerHTML = `<div class="success">✅ Connected successfully! Found ${data.length} pumps.</div>`;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadPumps() {
+            const pumpsDiv = document.getElementById('pumpsList');
+            try {
+                const { data, error } = await supabase.from('petrol_pumps').select('*');
+                if (error) throw error;
+                
+                if (data.length === 0) {
+                    pumpsDiv.innerHTML = '<div class="info">No pumps found. Register pumps first.</div>';
+                    return;
+                }
+                
+                let html = '<table><tr><th>ID (Database)</th><th>User ID</th><th>Company Name</th><th>Location</th><th>Status</th></tr>';
+                data.forEach(pump => {
+                    html += `<tr>
+                        <td>${pump.id}</td>
+                        <td>${pump.user_id}</td>
+                        <td>${pump.company_name}</td>
+                        <td>${pump.location}</td>
+                        <td>${pump.status}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                pumpsDiv.innerHTML = html;
+                
+                console.log('Pumps loaded:', data);
+            } catch (error) {
+                pumpsDiv.innerHTML = `<div class="error">Error loading pumps: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadOrders() {
+            const ordersDiv = document.getElementById('ordersList');
+            try {
+                const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                
+                if (data.length === 0) {
+                    ordersDiv.innerHTML = '<div class="info">No orders found.</div>';
+                    return;
+                }
+                
+                let html = '<table><tr><th>Order ID</th><th>Pump ID</th><th>Customer</th><th>Fuel</th><th>Total</th><th>Status</th><th>Created</th></tr>';
+                data.forEach(order => {
+                    html += `<tr>
+                        <td>${order.id}</td>
+                        <td class="${order.assigned_pump_id ? 'match' : 'no-match'}">${order.assigned_pump_id || 'NULL'}</td>
+                        <td>${order.customer_name}</td>
+                        <td>${order.fuel_type} - ${order.quantity}${order.unit}</td>
+                        <td>₹${order.total_amount}</td>
+                        <td>${order.status}</td>
+                        <td>${new Date(order.created_at).toLocaleString()}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                ordersDiv.innerHTML = html;
+                
+                console.log('Orders loaded:', data);
+            } catch (error) {
+                ordersDiv.innerHTML = `<div class="error">Error loading orders: ${error.message}</div>`;
+            }
+        }
+        
+        async function checkMatching() {
+            const resultsDiv = document.getElementById('matchingResults');
+            try {
+                // Load pumps
+                const { data: pumps, error: pumpsError } = await supabase.from('petrol_pumps').select('*');
+                if (pumpsError) throw pumpsError;
+                
+                // Load orders
+                const { data: orders, error: ordersError } = await supabase.from('orders').select('*');
+                if (ordersError) throw ordersError;
+                
+                let html = '<h3>Matching Results:</h3>';
+                let matchingCount = 0;
+                let unmatchingCount = 0;
+                
+                orders.forEach(order => {
+                    const matchingPump = pumps.find(p => p.id === order.assigned_pump_id);
+                    if (matchingPump) {
+                        matchingCount++;
+                        html += `<div class="success">
+                            ✅ Order #${order.id} → Pump ID ${order.assigned_pump_id} (${matchingPump.company_name})
+                        </div>`;
+                    } else if (order.assigned_pump_id) {
+                        unmatchingCount++;
+                        html += `<div class="error">
+                            ❌ Order #${order.id} → Pump ID ${order.assigned_pump_id} (PUMP NOT FOUND!)
+                        </div>`;
+                    } else {
+                        unmatchingCount++;
+                        html += `<div class="error">
+                            ❌ Order #${order.id} → NO PUMP ID ASSIGNED
+                        </div>`;
+                    }
+                });
+                
+                html += `<hr><h4>Summary: ${matchingCount} matched, ${unmatchingCount} unmatched</h4>`;
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function createTestOrder() {
+            const resultsDiv = document.getElementById('testOrderResults');
+            resultsDiv.innerHTML = '<div class="info">Creating test order...</div>';
+            
+            try {
+                // Get the first pump
+                const { data: pumps, error: pumpsError } = await supabase.from('petrol_pumps').select('*').limit(1).single();
+                if (pumpsError || !pumps) {
+                    throw new Error('No pumps available. Please register a pump first.');
+                }
+                
+                const testOrder = {
+                    customer_location: 'Test Address',
+                    assigned_pump_id: pumps.id,
+                    fuel_type: 'petrol',
+                    quantity: 10,
+                    unit: 'L',
+                    price_per_liter: 105.50,
+                    fuel_cost: 1055.00,
+                    delivery_fee: 49.00,
+                    total_amount: 1104.00,
+                    status: 'pending',
+                    customer_name: 'Test Customer',
+                    customer_mobile: '9999999999'
+                };
+                
+                const { data, error } = await supabase.from('orders').insert([testOrder]).select().single();
+                
+                if (error) throw error;
+                
+                resultsDiv.innerHTML = `<div class="success">
+                    ✅ Test order created successfully!<br>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>`;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-load on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            testConnection();
+        });
+    </script>
+</body>
+</html>
+

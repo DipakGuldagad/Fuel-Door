@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPI Payment QR Code - Fuel@Door</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+
+<body class="bg-gray-50">
+
+    <!-- QR Code Payment Section -->
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+
+            <!-- Header -->
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Complete Payment</h2>
+                <p class="text-gray-600">Scan QR code to pay via UPI</p>
+            </div>
+
+            <!-- Order Amount Display -->
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 mb-6 text-white text-center">
+                <p class="text-sm opacity-90 mb-1">Total Amount</p>
+                <p class="text-4xl font-bold" id="displayAmount">₹0.00</p>
+            </div>
+
+            <!-- QR Code Container -->
+            <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                <div id="qrcode" class="flex justify-center mb-4"></div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-1">UPI ID</p>
+                    <p class="text-lg font-semibold text-gray-800 break-all">dipak.guldagad1305@okhdfcbank</p>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800 font-medium mb-2">📱 How to Pay:</p>
+                <ol class="text-sm text-blue-700 space-y-1 ml-4 list-decimal">
+                    <li>Open any UPI app (Google Pay, PhonePe, Paytm)</li>
+                    <li>Scan the QR code above</li>
+                    <li>Verify the amount and complete payment</li>
+                </ol>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <button onclick="confirmPayment()"
+                    class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition duration-300 shadow-md">
+                    ✓ I Have Paid
+                </button>
+            </div>
+
+            <!-- Footer Note -->
+            <p class="text-xs text-gray-500 text-center mt-6">
+                Payment is secure and processed via UPI
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const UPI_ID = 'dipak.guldagad1305@okhdfcbank';
+        const PAYEE_NAME = 'FuelDelivery';
+        let currentAmount = 0;
+        let qrCodeInstance = null;
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function () {
+            // Try to get amount from URL parameter or localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlAmount = urlParams.get('amount');
+            const storedAmount = localStorage.getItem('orderAmount');
+
+            currentAmount = urlAmount || storedAmount || 500; // Default to 500 for demo
+            generateQRCode(currentAmount);
+        });
+
+        /**
+         * Generate UPI QR Code
+         * @param {number} amount - Payment amount in INR
+         */
+        function generateQRCode(amount) {
+            currentAmount = parseFloat(amount);
+
+            // Update display amount
+            document.getElementById('displayAmount').textContent = `₹${currentAmount.toFixed(2)}`;
+
+            // Create UPI payment link
+            const upiLink = `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${currentAmount}&cu=INR`;
+
+            // Clear existing QR code
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+
+            // Generate new QR code
+            qrCodeInstance = new QRCode(qrContainer, {
+                text: upiLink,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            console.log('QR Code generated for amount:', currentAmount);
+            console.log('UPI Link:', upiLink);
+        }
+
+        /**
+         * Regenerate QR Code (for testing)
+         */
+        function regenerateQR() {
+            const newAmount = prompt('Enter amount (INR):', currentAmount);
+            if (newAmount && !isNaN(newAmount) && parseFloat(newAmount) > 0) {
+                generateQRCode(newAmount);
+
+                // Show success message
+                showNotification('QR Code regenerated successfully!', 'success');
+            } else if (newAmount !== null) {
+                showNotification('Please enter a valid amount', 'error');
+            }
+        }
+
+        /**
+         * Handle payment confirmation
+         */
+        function confirmPayment() {
+            const confirmed = confirm('Have you completed the payment of ₹' + currentAmount.toFixed(2) + '?');
+
+            if (confirmed) {
+                // Store payment info
+                const paymentData = {
+                    amount: currentAmount,
+                    upiId: UPI_ID,
+                    timestamp: new Date().toISOString(),
+                    status: 'completed'
+                };
+
+                localStorage.setItem('lastPayment', JSON.stringify(paymentData));
+
+                // Get order data from localStorage
+                const orderData = JSON.parse(localStorage.getItem('pendingOrder') || '{}');
+
+                // Show success page
+                showSuccessPage(orderData);
+            }
+        }
+
+        /**
+         * Show success page after payment confirmation
+         */
+        function showSuccessPage(orderData) {
+            // Hide the entire payment section
+            document.querySelector('.min-h-screen').innerHTML = `
+                <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+                    <!-- Success Icon -->
+                    <div class="text-center mb-6">
+                        <div class="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h2>
+                        <p class="text-gray-600">Your order has been placed successfully</p>
+                    </div>
+
+                    <!-- Order Details -->
+                    <div class="bg-gray-50 rounded-xl p-6 mb-6 space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Amount Paid</span>
+                            <span class="font-semibold text-gray-800">₹${currentAmount.toFixed(2)}</span>
+                        </div>
+                        ${orderData.fuel_type ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Fuel Type</span>
+                            <span class="font-semibold text-gray-800">${orderData.fuel_type.toUpperCase()}</span>
+                        </div>
+                        ` : ''}
+                        ${orderData.quantity ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Quantity</span>
+                            <span class="font-semibold text-gray-800">${orderData.quantity} ${orderData.unit || 'L'}</span>
+                        </div>
+                        ` : ''}
+                        ${orderData.pump_name ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Petrol Pump</span>
+                            <span class="font-semibold text-gray-800">${orderData.pump_name}</span>
+                        </div>
+                        ` : ''}
+                        ${orderData.pump_location ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Location</span>
+                            <span class="font-semibold text-gray-800">${orderData.pump_location}</span>
+                        </div>
+                        ` : ''}
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Payment Time</span>
+                            <span class="font-semibold text-gray-800">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <p class="text-sm text-green-800 font-medium mb-2">✅ Order Confirmed!</p>
+                        <p class="text-sm text-green-700">
+                            Your fuel delivery has been scheduled. The delivery partner will arrive at your location soon.
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-3">
+                        <button 
+                            onclick="window.location.href='index.html'" 
+                            class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition duration-300 shadow-md">
+                            Back to Home
+                        </button>
+                    </div>
+
+                    <!-- Footer Note -->
+                    <p class="text-xs text-gray-500 text-center mt-6">
+                        Thank you for choosing Fuel@Door!
+                    </p>
+                </div>
+            `;
+        }
+
+        /**
+         * Show notification message
+         */
+        function showNotification(message, type) {
+            const color = type === 'success' ? 'green' : 'red';
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 bg-${color}-500 text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        /**
+         * Function to set amount from external code (for integration)
+         * Call this from your order confirmation page
+         */
+        function setPaymentAmount(amount) {
+            if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                generateQRCode(amount);
+                return true;
+            }
+            return false;
+        }
+
+        // Expose function globally for integration
+        window.setPaymentAmount = setPaymentAmount;
+    </script>
+
+</body>
+
+</html>

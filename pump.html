@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Petrol Pump Login & Registration — Fuel@Door</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					colors: {
+						primary: '#f97316',
+						'primary-hover': '#ea580c',
+					}
+				}
+			}
+		}
+	</script>
+</head>
+
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+	<header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200">
+		<div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+			<a href="index.html" class="flex items-center gap-2 font-bold text-2xl">
+				<img src="logo.png" class="w-8 h-8 rounded" alt="Logo" />
+				Fuel@Door
+			</a>
+			<nav class="flex items-center gap-2">
+				<a href="index.html" class="px-3 py-2 rounded-md hover:bg-slate-100">Home</a>
+				<a href="login.html" class="px-3 py-2 rounded-md bg-slate-900 text-white hover:bg-slate-800">Customer
+					Login</a>
+			</nav>
+		</div>
+	</header>
+
+	<main class="max-w-4xl mx-auto px-4 py-8">
+		<!-- Tab Navigation -->
+		<div class="mb-8">
+			<div class="flex bg-slate-200 p-1 rounded-lg w-fit mx-auto">
+				<button id="loginTab"
+					class="tab-btn active px-6 py-3 rounded-md font-medium transition-all">Login</button>
+				<button id="registerTab"
+					class="tab-btn px-6 py-3 rounded-md font-medium transition-all">Register</button>
+			</div>
+		</div>
+
+		<!-- Login Form -->
+		<section id="loginSection" class="tab-content active">
+			<div class="max-w-md mx-auto bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+				<div class="text-center mb-6">
+					<div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+						<svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+							<path fill="currentColor"
+								d="M7 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H7Zm1 3h4v3H8V6Zm8 2h2l1 1v7a2 2 0 1 0 2 2V9.828a2 2 0 0 0-.586-1.414l-2.828-2.828A2 2 0 0 0 16 4v4Z" />
+						</svg>
+					</div>
+					<h1 class="text-2xl font-bold mb-1">Petrol Pump Login</h1>
+					<p class="text-slate-600">Sign in to access your pump dashboard</p>
+				</div>
+
+				<form id="loginForm" class="space-y-4">
+					<div>
+						<label for="loginUserId" class="block text-sm font-medium mb-2">User ID</label>
+						<input id="loginUserId" type="text" required
+							class="w-full h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+							placeholder="e.g., BharatPetro-XY123" />
+						<p id="loginUserIdError" class="text-sm text-red-600 mt-1"></p>
+					</div>
+
+					<div>
+						<label for="loginPassword" class="block text-sm font-medium mb-2">Password</label>
+						<div class="relative">
+							<input id="loginPassword" type="password" required
+								class="w-full h-11 rounded-lg border border-slate-300 px-3 pr-10 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+								placeholder="Enter your password" />
+							<button type="button" id="toggleLoginPassword"
+								class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+								<svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+									<path fill="currentColor"
+										d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+								</svg>
+							</button>
+						</div>
+						<p id="loginPasswordError" class="text-sm text-red-600 mt-1"></p>
+					</div>
+
+					<div class="pt-2">
+						<button type="submit" id="loginBtn"
+							class="w-full h-11 rounded-lg bg-primary text-white font-medium hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/20 transition-colors">
+							Sign In
+						</button>
+					</div>
+
+					<div id="loginMessage" class="text-center text-sm mt-4"></div>
+				</form>
+			</div>
+		</section>
+
+		<!-- Registration Form -->
+		<section id="registerSection" class="tab-content">
+			<div class="max-w-2xl mx-auto bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+				<div class="text-center mb-6">
+					<div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+						<svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+							<path fill="currentColor"
+								d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+						</svg>
+					</div>
+					<h1 class="text-2xl font-bold mb-1">Petrol Pump Registration</h1>
+					<p class="text-slate-600">Register your petrol pump with our fuel delivery network</p>
+				</div>
+
+				<form id="registerForm" class="space-y-4">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="companyName" class="block text-sm font-medium mb-2">Petrol Company Name</label>
+							<input id="companyName" type="text" required
+								class="w-full h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+								placeholder="e.g., Bharat Petroleum" />
+							<p id="companyNameError" class="text-sm text-red-600 mt-1"></p>
+						</div>
+
+						<div>
+							<label for="location" class="block text-sm font-medium mb-2">Location of Petrol Pump</label>
+							<input id="location" type="text" required
+								class="w-full h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+								placeholder="e.g., Andheri West, Mumbai" />
+							<p id="locationError" class="text-sm text-red-600 mt-1"></p>
+						</div>
+
+						<div>
+							<label for="ownerName" class="block text-sm font-medium mb-2">Owner Name</label>
+							<input id="ownerName" type="text" required
+								class="w-full h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+								placeholder="Full name of owner" />
+							<p id="ownerNameError" class="text-sm text-red-600 mt-1"></p>
+						</div>
+
+						<div>
+							<label for="ownerMobile" class="block text-sm font-medium mb-2">Owner Mobile Number</label>
+							<input id="ownerMobile" type="tel" required
+								class="w-full h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+								placeholder="10-digit mobile number" />
+							<p id="ownerMobileError" class="text-sm text-red-600 mt-1"></p>
+						</div>
+
+						<div>
+							<label for="licenseNumber" class="block text-sm font-medium mb-2">Petrol Pump License
+								Number</label>
+							<input id="licenseNumber" type="text" required
+								class="w-full h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+								placeholder="License number" />
+							<p id="licenseNumberError" class="text-sm text-red-600 mt-1"></p>
+						</div>
+
+						<div>
+							<label for="fuelPrice" class="block text-sm font-medium mb-2">Fuel Price (per liter)</label>
+							<div class="relative">
+								<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+								<input id="fuelPrice" type="number" step="0.01" min="0" required
+									class="w-full h-11 rounded-lg border border-slate-300 pl-8 pr-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+									placeholder="105.50" />
+							</div>
+							<p id="fuelPriceError" class="text-sm text-red-600 mt-1"></p>
+						</div>
+					</div>
+
+					<div>
+						<label for="registerPassword" class="block text-sm font-medium mb-2">Password</label>
+						<div class="relative">
+							<input id="registerPassword" type="password" required
+								class="w-full h-11 rounded-lg border border-slate-300 px-3 pr-10 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+								placeholder="Create a strong password" />
+							<button type="button" id="toggleRegisterPassword"
+								class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+								<svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+									<path fill="currentColor"
+										d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+								</svg>
+							</button>
+						</div>
+						<p class="text-xs text-slate-500 mt-1">Password must be at least 8 characters long</p>
+						<p id="registerPasswordError" class="text-sm text-red-600 mt-1"></p>
+					</div>
+
+					<div class="pt-4">
+						<button type="submit" id="registerBtn"
+							class="w-full h-11 rounded-lg bg-primary text-white font-medium hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/20 transition-colors">
+							Register Petrol Pump
+						</button>
+					</div>
+
+					<div id="registerMessage" class="text-center text-sm mt-4"></div>
+				</form>
+			</div>
+		</section>
+
+		<!-- Success Modal -->
+		<div id="successModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+			<div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+				<div class="text-center">
+					<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+							<path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+						</svg>
+					</div>
+					<h3 class="text-xl font-bold text-gray-900 mb-2">Registration Successful!</h3>
+					<p class="text-gray-600 mb-4">Your petrol pump has been registered successfully.</p>
+					<div class="bg-slate-50 p-4 rounded-lg mb-4">
+						<p class="text-sm text-slate-600 mb-1">Your User ID:</p>
+						<p id="generatedUserId" class="text-lg font-mono font-bold text-primary"></p>
+					</div>
+					<p class="text-sm text-slate-600 mb-6">Please save this User ID. You'll need it to log in.</p>
+					<button id="closeModal"
+						class="w-full h-11 rounded-lg bg-primary text-white font-medium hover:bg-primary-hover transition-colors">
+						Continue to Login
+					</button>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+	<script src="config.js"></script>
+	<script src="pump.js"></script>
+
+	<style>
+		.tab-btn {
+			color: #64748b;
+		}
+
+		.tab-btn.active {
+			background: white;
+			color: #0f172a;
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		}
+
+		.tab-content {
+			display: none;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
+	</style>
+</body>
+
+</html>

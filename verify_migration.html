@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Migration Verification - Fuel@Door</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+
+        .status {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status.pending {
+            color: #f59e0b;
+        }
+
+        .status.success {
+            color: #10b981;
+        }
+
+        .status.error {
+            color: #ef4444;
+        }
+
+        .step {
+            margin-bottom: 15px;
+        }
+
+        code {
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #logs {
+            background: #1e1e1e;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Migration Verification</h1>
+    <p>Use this tool to verify your connection to the new Supabase project.</p>
+
+    <div class="card">
+        <h2>Configuration Check</h2>
+        <div class="step">
+            <span>Server URL:</span>
+            <code id="configUrl">Checking...</code>
+        </div>
+        <div class="step">
+            <span>Connection Status:</span>
+            <span id="connStatus" class="status pending">Waiting...</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Table Verification</h2>
+        <div id="tableList">
+            <div class="step">1. <code>petrol_pumps</code> <span id="status-pumps" class="status pending">Pending</span>
+            </div>
+            <div class="step">2. <code>orders</code> <span id="status-orders" class="status pending">Pending</span>
+            </div>
+            <div class="step">3. <code>logins</code> <span id="status-logins" class="status pending">Pending</span>
+            </div>
+            <div class="step">4. <code>agent_login</code> <span id="status-agents" class="status pending">Pending</span>
+            </div>
+        </div>
+        <button onclick="runVerification()">Run Verification</button>
+    </div>
+
+    <h3>Debug Logs</h3>
+    <div id="logs">Ready to verify...</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script>
+        const logs = document.getElementById('logs');
+        function log(msg, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `\n[${timestamp}] ${msg}`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(msg);
+        }
+
+        let supabase = null;
+
+        // Init
+        try {
+            document.getElementById('configUrl').textContent = window.SUPABASE_URL || 'Not Set';
+            if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+                supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+                log('Supabase client initialized.');
+            } else {
+                log('CRITICAL: Supabase config missing!', 'error');
+            }
+        } catch (e) {
+            log('Error initializing: ' + e.message, 'error');
+        }
+
+        async function verifyTable(tableName, statusId) {
+            if (!supabase) return;
+            const statusEl = document.getElementById(statusId);
+            statusEl.textContent = 'Checking...';
+            statusEl.className = 'status pending';
+
+            try {
+                // Try to select 1 record to check if table exists
+                const { data, error } = await supabase.from(tableName).select('count', { count: 'exact', head: true });
+
+                if (error) {
+                    // 42P01 means undefined table in Postgres
+                    if (error.code === '42P01' || error.message.includes('does not exist')) {
+                        statusEl.textContent = 'MISSING';
+                        statusEl.className = 'status error';
+                        log(`❌ Table '${tableName}' NOT found. Did you run migration.sql?`);
+                    } else {
+                        statusEl.textContent = 'Error';
+                        statusEl.className = 'status error';
+                        log(`⚠️ Error checking '${tableName}': ${error.message} (${error.code})`);
+                    }
+                } else {
+                    statusEl.textContent = 'EXISTS';
+                    statusEl.className = 'status success';
+                    log(`✅ Table '${tableName}' verified.`);
+                }
+            } catch (err) {
+                statusEl.textContent = 'Failed';
+                statusEl.className = 'status error';
+                log(`Exception checking '${tableName}': ${err.message}`);
+            }
+        }
+
+        async function runVerification() {
+            if (!supabase) {
+                alert('Supabase client not initialized. Check config.js.');
+                return;
+            }
+
+            log('\n--- Starting Verification ---');
+            document.getElementById('connStatus').textContent = 'Connecting...';
+
+            // Check basic connection
+            const { data, error } = await supabase.from('petrol_pumps').select('count', { count: 'exact', head: true });
+
+            if (error && error.code !== '42P01') { // Ignore "table missing" error for connection check
+                document.getElementById('connStatus').textContent = 'Connection Failed';
+                document.getElementById('connStatus').className = 'status error';
+                log('Connection failed: ' + error.message);
+                if (error.message.includes('JWT')) log('Hint: Check your ANON KEY.');
+                if (error.message.includes('fetch')) log('Hint: Check your PROJECT URL.');
+            } else {
+                document.getElementById('connStatus').textContent = 'Connected';
+                document.getElementById('connStatus').className = 'status success';
+                log('Connected to Supabase project successfully.');
+            }
+
+            // Check all tables
+            await verifyTable('petrol_pumps', 'status-pumps');
+            await verifyTable('orders', 'status-orders');
+            await verifyTable('logins', 'status-logins');
+            await verifyTable('agent_login', 'status-agents');
+
+            log('\n--- Verification Complete ---');
+        }
+    </script>
+</body>
+
+</html>

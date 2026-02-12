@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Order Placement - Fuel@Door</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <h1 class="text-3xl font-bold mb-6">Debug Order Placement</h1>
+        
+        <!-- Test Database Connection -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Database Connection Test</h2>
+            <button id="testConnection" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Test Connection
+            </button>
+            <div id="connectionResult" class="mt-4"></div>
+        </div>
+
+        <!-- Test Petrol Pumps Loading -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Petrol Pumps Test</h2>
+            <button id="testPumps" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Load Petrol Pumps
+            </button>
+            <div id="pumpsResult" class="mt-4"></div>
+        </div>
+
+        <!-- Test Order Placement -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Order Placement Test</h2>
+            <form id="debugOrderForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Customer Name:</label>
+                    <input type="text" id="customerName" value="Test Customer" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Customer Mobile:</label>
+                    <input type="text" id="customerMobile" value="9999999999" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Fuel Type:</label>
+                    <select id="fuelType" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="petrol">Petrol</option>
+                        <option value="diesel">Diesel</option>
+                        <option value="ev">EV</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Quantity:</label>
+                    <input type="number" id="quantity" value="10" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Price per Liter:</label>
+                    <input type="number" id="pricePerLiter" value="105" step="0.01" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Address:</label>
+                    <textarea id="address" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">123 Test Street, Test City, Test State</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Pincode:</label>
+                    <input type="text" id="pincode" value="400001" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Select Pump:</label>
+                    <select id="pumpSelect" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Delivery Time:</label>
+                    <select id="deliveryTime" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
+                        <option value="afternoon">Afternoon (12:00 PM - 4:00 PM)</option>
+                        <option value="evening">Evening (4:00 PM - 8:00 PM)</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                    Place Test Order
+                </button>
+            </form>
+            <div id="orderResult" class="mt-4"></div>
+        </div>
+
+        <!-- Order Payload Preview -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Order Payload Preview</h2>
+            <pre id="payloadPreview" class="bg-gray-100 p-4 rounded text-sm overflow-x-auto"></pre>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script>
+        // Initialize Supabase
+        let supabaseClient = null;
+        try {
+            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
+                supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            }
+        } catch (err) {
+            console.warn("Supabase init failed:", err);
+        }
+
+        const ORDERS_TABLE = 'orders';
+        const PETROL_PUMPS_TABLE = 'petrol_pumps';
+        const BASE_DELIVERY_FEE = 50; // Base fee for up to 10 liters
+        const EXTRA_DELIVERY_FEE_PER_LITER = 5; // Extra fee per liter above 10L
+        
+        function calculateDeliveryFee(quantity) {
+            if (quantity <= 10) {
+                return BASE_DELIVERY_FEE;
+            }
+            const extraLiters = quantity - 10;
+            return BASE_DELIVERY_FEE + (extraLiters * EXTRA_DELIVERY_FEE_PER_LITER);
+        }
+
+        // Test database connection
+        document.getElementById('testConnection').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '<div class="text-blue-600">Testing connection...</div>';
+
+            try {
+                if (!supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                // Test basic connection
+                const { data, error } = await supabaseClient
+                    .from(PETROL_PUMPS_TABLE)
+                    .select('count(*)')
+                    .limit(1);
+
+                if (error) {
+                    throw error;
+                }
+
+                resultDiv.innerHTML = '<div class="text-green-600">✓ Connection successful!</div>';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-600">✗ Connection failed: ${error.message}</div>`;
+            }
+        });
+
+        // Test petrol pumps loading
+        document.getElementById('testPumps').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('pumpsResult');
+            const pumpSelect = document.getElementById('pumpSelect');
+            
+            resultDiv.innerHTML = '<div class="text-blue-600">Loading pumps...</div>';
+            pumpSelect.innerHTML = '<option value="">Loading...</option>';
+
+            try {
+                if (!supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                const { data: pumps, error } = await supabaseClient
+                    .from(PETROL_PUMPS_TABLE)
+                    .select('id, company_name, location, fuel_price, status')
+                    .eq('status', 'active')
+                    .order('company_name');
+
+                if (error) {
+                    throw error;
+                }
+
+                resultDiv.innerHTML = `<div class="text-green-600">✓ Loaded ${pumps.length} pumps</div>`;
+                
+                pumpSelect.innerHTML = '<option value="">Select a petrol pump</option>';
+                pumps.forEach(pump => {
+                    const option = document.createElement('option');
+                    option.value = pump.id;
+                    option.textContent = `${pump.company_name} - ${pump.location} (₹${pump.fuel_price}/L)`;
+                    pumpSelect.appendChild(option);
+                });
+
+                // Display pump details
+                const pumpsHtml = pumps.map(pump => 
+                    `<div class="border-l-4 border-blue-500 pl-4 mt-2">
+                        <strong>${pump.company_name}</strong><br>
+                        Location: ${pump.location}<br>
+                        Price: ₹${pump.fuel_price}/L<br>
+                        Status: ${pump.status}<br>
+                        ID: ${pump.id}
+                    </div>`
+                ).join('');
+                
+                resultDiv.innerHTML += `<div class="mt-4">${pumpsHtml}</div>`;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-600">✗ Failed to load pumps: ${error.message}</div>`;
+                pumpSelect.innerHTML = '<option value="">Error loading pumps</option>';
+            }
+        });
+
+        // Update payload preview when form changes
+        function updatePayloadPreview() {
+            const customerName = document.getElementById('customerName').value;
+            const customerMobile = document.getElementById('customerMobile').value;
+            const fuelType = document.getElementById('fuelType').value;
+            const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+            const pricePerLiter = parseFloat(document.getElementById('pricePerLiter').value) || 0;
+            const address = document.getElementById('address').value;
+            const pincode = document.getElementById('pincode').value;
+            const pumpId = document.getElementById('pumpSelect').value;
+            const deliveryTime = document.getElementById('deliveryTime').value;
+
+            const fuelCost = pricePerLiter * quantity;
+            const deliveryFee = calculateDeliveryFee(quantity);
+            const tax = (fuelCost + deliveryFee) * 0.05;
+            const total = fuelCost + deliveryFee + tax;
+
+            const payload = {
+                customer_name: customerName,
+                customer_mobile: customerMobile,
+                fuel_type: fuelType,
+                quantity: quantity,
+                unit: 'liters',
+                price_per_liter: pricePerLiter,
+                customer_location: address,
+                landmark: null,
+                pincode: pincode,
+                delivery_time: deliveryTime,
+                assigned_pump_id: pumpId ? parseInt(pumpId) : null,
+                fuel_cost: fuelCost,
+                delivery_fee: deliveryFee,
+                total_amount: total,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            };
+
+            document.getElementById('payloadPreview').textContent = JSON.stringify(payload, null, 2);
+        }
+
+        // Add event listeners to form fields
+        ['customerName', 'customerMobile', 'fuelType', 'quantity', 'pricePerLiter', 'address', 'pincode', 'pumpSelect', 'deliveryTime'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePayloadPreview);
+        });
+
+        // Test order placement
+        document.getElementById('debugOrderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('orderResult');
+            resultDiv.innerHTML = '<div class="text-blue-600">Placing test order...</div>';
+
+            try {
+                if (!supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                const customerName = document.getElementById('customerName').value;
+                const customerMobile = document.getElementById('customerMobile').value;
+                const fuelType = document.getElementById('fuelType').value;
+                const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+                const pricePerLiter = parseFloat(document.getElementById('pricePerLiter').value) || 0;
+                const address = document.getElementById('address').value;
+                const pincode = document.getElementById('pincode').value;
+                const pumpId = document.getElementById('pumpSelect').value;
+                const deliveryTime = document.getElementById('deliveryTime').value;
+
+                if (!pumpId) {
+                    throw new Error('Please select a petrol pump');
+                }
+
+                const fuelCost = pricePerLiter * quantity;
+                const deliveryFee = calculateDeliveryFee(quantity);
+                const tax = (fuelCost + deliveryFee) * 0.05;
+                const total = fuelCost + deliveryFee + tax;
+
+                const orderPayload = {
+                    customer_name: customerName,
+                    customer_mobile: customerMobile,
+                    fuel_type: fuelType,
+                    quantity: quantity,
+                    unit: 'liters',
+                    price_per_liter: pricePerLiter,
+                    customer_location: address,
+                    landmark: null,
+                    pincode: pincode,
+                    delivery_time: deliveryTime,
+                    assigned_pump_id: parseInt(pumpId),
+                    fuel_cost: fuelCost,
+                    delivery_fee: deliveryFee,
+                    total_amount: total,
+                    status: 'pending',
+                    created_at: new Date().toISOString()
+                };
+
+                console.log('Placing order with payload:', orderPayload);
+
+                const { data, error } = await supabaseClient
+                    .from(ORDERS_TABLE)
+                    .insert([orderPayload])
+                    .select('id')
+                    .single();
+
+                if (error) {
+                    throw error;
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="text-green-600">
+                        ✓ Order placed successfully!<br>
+                        Order ID: ${data.id}<br>
+                        Total: ₹${total.toFixed(2)}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Order placement error:', error);
+                resultDiv.innerHTML = `
+                    <div class="text-red-600">
+                        ✗ Order placement failed:<br>
+                        <strong>Error:</strong> ${error.message}<br>
+                        <strong>Code:</strong> ${error.code || 'N/A'}<br>
+                        <strong>Details:</strong> ${error.details || 'N/A'}<br>
+                        <strong>Hint:</strong> ${error.hint || 'N/A'}
+                    </div>
+                `;
+            }
+        });
+
+        // Initialize
+        updatePayloadPreview();
+        
+        // Auto-load pumps on page load
+        setTimeout(() => {
+            document.getElementById('testPumps').click();
+        }, 1000);
+    </script>
+</body>
+</html>

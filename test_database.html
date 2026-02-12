@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Test - Fuel@Door</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Fuel@Door Database Test</h1>
+    
+    <div>
+        <button onclick="testConnection()">Test Database Connection</button>
+        <button onclick="checkTableStructure()">Check Table Structure</button>
+        <button onclick="checkPumpColumns()">Check Pump Columns</button>
+        <button onclick="testPetrolPumps()">Test Petrol Pumps Table</button>
+        <button onclick="testOrders()">Test Orders Table</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        let supabaseClient = null;
+        
+        try {
+            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
+                supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+                showResult('Supabase client initialized successfully', 'success');
+            } else {
+                showResult('Supabase configuration missing. Check config.js file.', 'error');
+            }
+        } catch (err) {
+            showResult(`Supabase initialization failed: ${err.message}`, 'error');
+        }
+        
+        function showResult(message, type) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        async function testConnection() {
+            if (!supabaseClient) {
+                showResult('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                // Try a simple query to test connection
+                const { data, error } = await supabaseClient
+                    .from('petrol_pumps')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    showResult(`Connection test failed: ${error.message}`, 'error');
+                } else {
+                    showResult('Database connection successful!', 'success');
+                }
+            } catch (err) {
+                showResult(`Connection test error: ${err.message}`, 'error');
+            }
+        }
+        
+        async function checkTableStructure() {
+            if (!supabaseClient) {
+                showResult('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            // Check if petrol_pumps table exists
+            try {
+                const { data: pumpsData, error: pumpsError } = await supabaseClient
+                    .from('petrol_pumps')
+                    .select('*')
+                    .limit(0);
+                
+                if (pumpsError) {
+                    showResult(`❌ petrol_pumps table: ${pumpsError.message}`, 'error');
+                } else {
+                    showResult('✅ petrol_pumps table exists', 'success');
+                }
+            } catch (err) {
+                showResult(`❌ petrol_pumps table error: ${err.message}`, 'error');
+            }
+            
+            // Check if orders table exists
+            try {
+                const { data: ordersData, error: ordersError } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .limit(0);
+                
+                if (ordersError) {
+                    showResult(`❌ orders table: ${ordersError.message}`, 'error');
+                    
+                    // Suggest solution
+                    showResult('💡 Solution: The orders table may not exist or may have wrong structure. Run the supabase_setup.sql script first, then add_ev_support.sql', 'info');
+                } else {
+                    showResult('✅ orders table exists', 'success');
+                }
+            } catch (err) {
+                showResult(`❌ orders table error: ${err.message}`, 'error');
+            }
+        }
+        
+        async function checkPumpColumns() {
+            if (!supabaseClient) {
+                showResult('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            showResult('Checking petrol_pumps table columns...', 'info');
+            
+            // Try to select specific columns to see if they exist
+            const requiredColumns = ['latitude', 'longitude', 'company_name', 'owner_name', 'owner_mobile', 'license_number', 'fuel_price', 'password_hash'];
+            
+            for (const column of requiredColumns) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('petrol_pumps')
+                        .select(column)
+                        .limit(0);
+                    
+                    if (error) {
+                        showResult(`❌ Column '${column}': ${error.message}`, 'error');
+                        
+                        if (error.message.includes('does not exist')) {
+                            showResult(`💡 Missing column '${column}' - run fix_petrol_pumps_table.sql to add it`, 'info');
+                        }
+                    } else {
+                        showResult(`✅ Column '${column}' exists`, 'success');
+                    }
+                } catch (err) {
+                    showResult(`❌ Column '${column}' check failed: ${err.message}`, 'error');
+                }
+            }
+            
+            showResult('Column check complete. If any columns are missing, run fix_petrol_pumps_table.sql', 'info');
+        }
+        
+        async function testPetrolPumps() {
+            if (!supabaseClient) {
+                showResult('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('petrol_pumps')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    showResult(`Petrol pumps query failed: ${error.message}`, 'error');
+                } else {
+                    showResult(`Found ${data.length} petrol pump(s)`, 'success');
+                    if (data.length > 0) {
+                        showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                    } else {
+                        showResult('No petrol pumps found in database. You may need to add some test data.', 'info');
+                    }
+                }
+            } catch (err) {
+                showResult(`Petrol pumps test error: ${err.message}`, 'error');
+            }
+        }
+        
+        async function testOrders() {
+            if (!supabaseClient) {
+                showResult('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    showResult(`Orders query failed: ${error.message}`, 'error');
+                } else {
+                    showResult(`Found ${data.length} order(s)`, 'success');
+                    if (data.length > 0) {
+                        showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                    } else {
+                        showResult('No orders found in database.', 'info');
+                    }
+                }
+            } catch (err) {
+                showResult(`Orders test error: ${err.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

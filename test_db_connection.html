@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Connection Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-4">Database Connection Test</h1>
+        
+        <div id="status" class="mb-4 p-4 rounded"></div>
+        
+        <button onclick="testConnection()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Test Connection
+        </button>
+        
+        <button onclick="testOrderSave()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2">
+            Test Order Save
+        </button>
+        
+        <button onclick="fetchOrders()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2">
+            Fetch Orders
+        </button>
+        
+        <div id="results" class="mt-6 p-4 bg-gray-100 rounded overflow-auto max-h-96"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script>
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+        
+        let supabaseClient;
+        
+        try {
+            supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            showStatus('Supabase client initialized', 'success');
+        } catch (error) {
+            showStatus('Failed to initialize Supabase: ' + error.message, 'error');
+        }
+        
+        function showStatus(message, type) {
+            statusDiv.className = `mb-4 p-4 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            statusDiv.textContent = message;
+        }
+        
+        function showResults(data) {
+            resultsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+        
+        async function testConnection() {
+            try {
+                showStatus('Testing connection...', 'success');
+                
+                const { data, error } = await supabaseClient
+                    .from('petrol_pumps')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    showStatus('Connection test failed: ' + error.message, 'error');
+                    showResults({ error: error.message, details: error });
+                } else {
+                    showStatus('✅ Connection successful! Found ' + data.length + ' pumps', 'success');
+                    showResults(data);
+                }
+            } catch (error) {
+                showStatus('Connection test error: ' + error.message, 'error');
+                showResults({ error: error.message });
+            }
+        }
+        
+        async function testOrderSave() {
+            try {
+                showStatus('Testing order save...', 'success');
+                
+                const testOrder = {
+                    customer_location: 'Test Location',
+                    assigned_pump_id: 1,
+                    fuel_type: 'petrol',
+                    quantity: 10,
+                    unit: 'L',
+                    price_per_liter: 105.50,
+                    fuel_cost: 1055,
+                    delivery_fee: 49,
+                    total_amount: 1104,
+                    status: 'pending_payment',
+                    customer_name: 'Test Customer',
+                    customer_mobile: '9876543210',
+                    pump_name: 'Test Pump',
+                    pump_location: 'Test Area'
+                };
+                
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .insert([testOrder])
+                    .select()
+                    .single();
+                
+                if (error) {
+                    showStatus('Order save failed: ' + error.message, 'error');
+                    showResults({ error: error.message, details: error });
+                } else {
+                    showStatus('✅ Order saved successfully! ID: ' + data.id, 'success');
+                    showResults(data);
+                }
+            } catch (error) {
+                showStatus('Order save error: ' + error.message, 'error');
+                showResults({ error: error.message });
+            }
+        }
+        
+        async function fetchOrders() {
+            try {
+                showStatus('Fetching orders...', 'success');
+                
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (error) {
+                    showStatus('Fetch failed: ' + error.message, 'error');
+                    showResults({ error: error.message, details: error });
+                } else {
+                    showStatus('✅ Found ' + data.length + ' orders', 'success');
+                    showResults(data);
+                }
+            } catch (error) {
+                showStatus('Fetch error: ' + error.message, 'error');
+                showResults({ error: error.message });
+            }
+        }
+        
+        // Auto test on load
+        setTimeout(testConnection, 500);
+    </script>
+</body>
+</html>
+
