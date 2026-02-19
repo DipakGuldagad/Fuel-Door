@@ -1,280 +1,288 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Order Summary — Fuel@Door</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css" />
-<style>
-.summary-page {
-background: #f8fafc;
-}
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Order Summary — Fuel@Door</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="styles.css" />
+	<style>
+		.summary-page {
+			background: #f8fafc;
+		}
 
-.summary-grid {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 2rem;
-margin-top: 2rem;
-}
+		.summary-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 2rem;
+			margin-top: 2rem;
+		}
 
-@media (max-width: 768px) {
-.summary-grid {
-grid-template-columns: 1fr;
-gap: 1.5rem;
-}
-}
+		@media (max-width: 768px) {
+			.summary-grid {
+				grid-template-columns: 1fr;
+				gap: 1.5rem;
+			}
+		}
 
-.order-details-card,
-.delivery-form-card {
-background: white;
-border-radius: 12px;
-padding: 1.5rem;
-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-border: 1px solid #e2e8f0;
-}
+		.order-details-card,
+		.delivery-form-card {
+			background: white;
+			border-radius: 12px;
+			padding: 1.5rem;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+			border: 1px solid #e2e8f0;
+		}
 
-.order-details-card h2,
-.delivery-form-card h2 {
-margin: 0 0 1.5rem 0;
-font-size: 1.25rem;
-font-weight: 600;
-color: #1e293b;
-}
+		.order-details-card h2,
+		.delivery-form-card h2 {
+			margin: 0 0 1.5rem 0;
+			font-size: 1.25rem;
+			font-weight: 600;
+			color: #1e293b;
+		}
 
-.order-item {
-display: flex;
-justify-content: space-between;
-align-items: center;
-padding: 0.75rem 0;
-border-bottom: 1px solid #f1f5f9;
-}
+		.order-item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 0.75rem 0;
+			border-bottom: 1px solid #f1f5f9;
+		}
 
-.order-item:last-child {
-border-bottom: none;
-}
+		.order-item:last-child {
+			border-bottom: none;
+		}
 
-.item-info {
-display: flex;
-flex-direction: column;
-gap: 0.25rem;
-}
+		.item-info {
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
+		}
 
-.item-name {
-font-weight: 500;
-color: #374151;
-}
+		.item-name {
+			font-weight: 500;
+			color: #374151;
+		}
 
-.item-quantity {
-font-size: 0.875rem;
-color: #6b7280;
-}
+		.item-quantity {
+			font-size: 0.875rem;
+			color: #6b7280;
+		}
 
-.item-price {
-font-weight: 600;
-color: #1e293b;
-}
+		.item-price {
+			font-weight: 600;
+			color: #1e293b;
+		}
 
-.order-total {
-display: flex;
-justify-content: space-between;
-align-items: center;
-padding: 1rem 0 0 0;
-margin-top: 1rem;
-border-top: 2px solid #e2e8f0;
-}
+		.order-total {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 1rem 0 0 0;
+			margin-top: 1rem;
+			border-top: 2px solid #e2e8f0;
+		}
 
-.total-label {
-font-size: 1.125rem;
-font-weight: 600;
-color: #1e293b;
-}
+		.total-label {
+			font-size: 1.125rem;
+			font-weight: 600;
+			color: #1e293b;
+		}
 
-.total-amount {
-font-size: 1.25rem;
-font-weight: 700;
-color: #059669;
-}
+		.total-amount {
+			font-size: 1.25rem;
+			font-weight: 700;
+			color: #059669;
+		}
 
-.delivery-form-card .form-field {
-margin-bottom: 1.5rem;
-}
+		.delivery-form-card .form-field {
+			margin-bottom: 1.5rem;
+		}
 
-.delivery-form-card label {
-display: block;
-margin-bottom: 0.5rem;
-font-weight: 500;
-color: #374151;
-}
+		.delivery-form-card label {
+			display: block;
+			margin-bottom: 0.5rem;
+			font-weight: 500;
+			color: #374151;
+		}
 
-.delivery-form-card input,
-.delivery-form-card textarea,
-.delivery-form-card select {
-width: 100%;
-padding: 0.75rem;
-border: 1px solid #d1d5db;
-border-radius: 8px;
-font-size: 1rem;
-transition: border-color 0.2s;
-}
+		.delivery-form-card input,
+		.delivery-form-card textarea,
+		.delivery-form-card select {
+			width: 100%;
+			padding: 0.75rem;
+			border: 1px solid #d1d5db;
+			border-radius: 8px;
+			font-size: 1rem;
+			transition: border-color 0.2s;
+		}
 
-.delivery-form-card input:focus,
-.delivery-form-card textarea:focus,
-.delivery-form-card select:focus {
-outline: none;
-border-color: #3b82f6;
-box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
+		.delivery-form-card input:focus,
+		.delivery-form-card textarea:focus,
+		.delivery-form-card select:focus {
+			outline: none;
+			border-color: #3b82f6;
+			box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+		}
 
-.delivery-form-card textarea {
-min-height: 80px;
-resize: vertical;
-}
+		.delivery-form-card textarea {
+			min-height: 80px;
+			resize: vertical;
+		}
 
-.delivery-form-card .form-actions {
-display: flex;
-gap: 1rem;
-margin-top: 2rem;
-}
+		.delivery-form-card .form-actions {
+			display: flex;
+			gap: 1rem;
+			margin-top: 2rem;
+		}
 
-.delivery-form-card .form-actions .button {
-flex: 1;
-}
+		.delivery-form-card .form-actions .button {
+			flex: 1;
+		}
 
-@media (max-width: 640px) {
-.delivery-form-card .form-actions {
-flex-direction: column;
-}
-}
+		@media (max-width: 640px) {
+			.delivery-form-card .form-actions {
+				flex-direction: column;
+			}
+		}
 
-.success {
-background: #d1fae5;
-color: #065f46;
-padding: 1rem;
-border-radius: 8px;
-margin-top: 1rem;
-font-weight: 500;
-}
+		.success {
+			background: #d1fae5;
+			color: #065f46;
+			padding: 1rem;
+			border-radius: 8px;
+			margin-top: 1rem;
+			font-weight: 500;
+		}
 
-.error {
-color: #dc2626;
-font-size: 0.875rem;
-margin-top: 0.25rem;
-}
-</style>
+		.error {
+			color: #dc2626;
+			font-size: 0.875rem;
+			margin-top: 0.25rem;
+		}
+	</style>
 </head>
+
 <body class="summary-page">
-<header class="site-header">
-<div class="container">
-<div class="brand"><img src="logo.png" alt="Fuel@Door logo" class="brand-logo" />Fuel@Door</div>
-<nav class="nav">
-<a class="nav-link" href="index.html">Home</a>
-<a class="nav-link" href="login.html">Back to Order</a>
-</nav>
-</div>
-</header>
+	<header class="site-header">
+		<div class="container">
+			<div class="brand"><img src="logo.png" alt="Fuel@Door logo" class="brand-logo" />Fuel@Door</div>
+			<nav class="nav">
+				<a class="nav-link" href="index.html">Home</a>
+				<a class="nav-link" href="login.html">Back to Order</a>
+			</nav>
+		</div>
+	</header>
 
-<main>
-<section class="section">
-<div class="container">
-<h1 class="section-title">Order Summary</h1>
-<p class="section-subtitle">Review your order and add delivery location</p>
+	<main>
+		<section class="section">
+			<div class="container">
+				<h1 class="section-title">Order Summary</h1>
+				<p class="section-subtitle">Review your order and add delivery location</p>
 
-<div class="summary-grid">
-<div class="summary-left">
-<div class="order-details-card">
-<h2>Order Details</h2>
-<div class="order-item">
-<div class="item-info">
-<span class="item-name" id="orderType">Petrol</span>
-<span class="item-quantity" id="orderQuantity">10 L</span>
-</div>
-<div class="item-price" id="orderPrice">₹1,050.00</div>
-</div>
-					<div class="order-item">
-						<div class="item-info">
-							<span class="item-name">Delivery Fee</span>
-							<span class="item-quantity" style="font-size: 0.75rem;">Base ₹50 + ₹5/L above 10L</span>
+				<div class="summary-grid">
+					<div class="summary-left">
+						<div class="order-details-card">
+							<h2>Order Details</h2>
+							<div class="order-item">
+								<div class="item-info">
+									<span class="item-name" id="orderType">Petrol</span>
+									<span class="item-quantity" id="orderQuantity">10 L</span>
+								</div>
+								<div class="item-price" id="orderPrice">₹1,050.00</div>
+							</div>
+							<div class="order-item">
+								<div class="item-info">
+									<span class="item-name">Delivery Fee</span>
+									<span class="item-quantity" style="font-size: 0.75rem;">Slab-based delivery fee
+										(Free > 50L)</span>
+								</div>
+								<div class="item-price" id="deliveryFeeDisplay">₹50.00</div>
+							</div>
+							<div class="order-item">
+								<div class="item-info">
+									<span class="item-name">Tax (5%)</span>
+								</div>
+								<div class="item-price" id="orderTax">₹52.50</div>
+							</div>
+							<div class="order-total">
+								<div class="total-label">Total</div>
+								<div class="total-amount" id="orderTotal">₹1,151.50</div>
+							</div>
 						</div>
-						<div class="item-price" id="deliveryFeeDisplay">₹50.00</div>
 					</div>
-<div class="order-item">
-<div class="item-info">
-<span class="item-name">Tax (5%)</span>
-</div>
-<div class="item-price" id="orderTax">₹52.50</div>
-</div>
-<div class="order-total">
-<div class="total-label">Total</div>
-<div class="total-amount" id="orderTotal">₹1,151.50</div>
-</div>
-</div>
-</div>
 
-<div class="summary-right">
-<div class="delivery-form-card">
-<h2>Delivery Information</h2>
-<form id="deliveryForm" novalidate>
-<div class="form-field">
-<label for="address">Delivery Address</label>
-<textarea id="address" name="address" placeholder="Enter your complete delivery address" required></textarea>
-<small class="error" id="addressError"></small>
-</div>
+					<div class="summary-right">
+						<div class="delivery-form-card">
+							<h2>Delivery Information</h2>
+							<form id="deliveryForm" novalidate>
+								<div class="form-field">
+									<label for="address">Delivery Address</label>
+									<textarea id="address" name="address"
+										placeholder="Enter your complete delivery address" required></textarea>
+									<small class="error" id="addressError"></small>
+								</div>
 
-<div class="form-field">
-<label for="landmark">Landmark (Optional)</label>
-<input type="text" id="landmark" name="landmark" placeholder="e.g., Near Metro Station" />
-</div>
+								<div class="form-field">
+									<label for="landmark">Landmark (Optional)</label>
+									<input type="text" id="landmark" name="landmark"
+										placeholder="e.g., Near Metro Station" />
+								</div>
 
-<div class="form-field">
-<label for="pincode">Pincode</label>
-<input type="text" id="pincode" name="pincode" placeholder="400001" maxlength="6" required />
-<small class="error" id="pincodeError"></small>
-</div>
+								<div class="form-field">
+									<label for="pincode">Pincode</label>
+									<input type="text" id="pincode" name="pincode" placeholder="400001" maxlength="6"
+										required />
+									<small class="error" id="pincodeError"></small>
+								</div>
 
-				<div class="form-field">
-					<label for="petrolPump">Select Petrol Pump *</label>
-					<select id="petrolPump" name="petrolPump" required>
-						<option value="">Loading petrol pumps...</option>
-					</select>
-					<small class="error" id="petrolPumpError"></small>
+								<div class="form-field">
+									<label for="petrolPump">Select Petrol Pump *</label>
+									<select id="petrolPump" name="petrolPump" required>
+										<option value="">Loading petrol pumps...</option>
+									</select>
+									<small class="error" id="petrolPumpError"></small>
+								</div>
+
+								<div class="form-field">
+									<label for="deliveryTime">Preferred Delivery Time</label>
+									<select id="deliveryTime" name="deliveryTime" required>
+										<option value="">Select time slot</option>
+										<option value="morning">Morning (8:00 AM - 12:00 PM)</option>
+										<option value="afternoon">Afternoon (12:00 PM - 4:00 PM)</option>
+										<option value="evening">Evening (4:00 PM - 8:00 PM)</option>
+									</select>
+									<small class="error" id="deliveryTimeError"></small>
+								</div>
+
+								<div class="form-actions">
+									<button type="submit" class="button button-primary button-lg">Place Order</button>
+									<a href="login.html" class="button">Modify Order</a>
+								</div>
+
+								<div id="orderSuccess" class="success" role="status" aria-live="polite"></div>
+							</form>
+						</div>
+					</div>
 				</div>
+			</div>
+		</section>
+	</main>
 
-<div class="form-field">
-<label for="deliveryTime">Preferred Delivery Time</label>
-<select id="deliveryTime" name="deliveryTime" required>
-<option value="">Select time slot</option>
-<option value="morning">Morning (8:00 AM - 12:00 PM)</option>
-<option value="afternoon">Afternoon (12:00 PM - 4:00 PM)</option>
-<option value="evening">Evening (4:00 PM - 8:00 PM)</option>
-</select>
-<small class="error" id="deliveryTimeError"></small>
-</div>
+	<footer class="site-footer">
+		<div class="container">
+			<p> <span id="year"></span> Fuel@Door. All rights reserved.</p>
+		</div>
+	</footer>
 
-<div class="form-actions">
-<button type="submit" class="button button-primary button-lg">Place Order</button>
-<a href="login.html" class="button">Modify Order</a>
-</div>
-
-<div id="orderSuccess" class="success" role="status" aria-live="polite"></div>
-</form>
-</div>
-</div>
-</div>
-</div>
-</section>
-</main>
-
-<footer class="site-footer">
-<div class="container">
-<p> <span id="year"></span> Fuel@Door. All rights reserved.</p>
-</div>
-</footer>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
-<script src="config.js"></script>
-<script src="summary.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+	<script src="config.js"></script>
+	<script src="pricing_utils.js"></script>
+	<script src="summary.js"></script>
 </body>
+
 </html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Place Order — Fuel@Door</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="stepper.css" />
+    <script src="auth_utils.js"></script>
+    <script>
+        // Immediate protection check
+        if (!window.AuthUtils.getSession()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+
+<body class="order-page">
+    <header class="site-header">
+        <div class="container header-container">
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            <div class="brand"><img src="logo.png" alt="Fuel@Door logo" class="brand-logo" />Fuel@Door</div>
+            <div class="header-login">
+                <a class="button button-primary" href="#" id="loginCta">Logout</a>
+            </div>
+        </div>
+        <nav class="hamburger-menu" id="hamburgerMenu">
+            <div class="hamburger-menu-content">
+                <a class="hamburger-menu-item" href="index.html">Home</a>
+                <a class="hamburger-menu-item" href="order.html">Order Fuel</a>
+                <a class="hamburger-menu-item" href="pump.html">Petrol Pump Login</a>
+            </div>
+        </nav>
+        <div class="menu-overlay" id="menuOverlay"></div>
+    </header>
+
+    <main>
+        <!-- Order Section (Integrated) -->
+        <section class="order-section section" id="order">
+            <div class="container mb-5">
+                <!-- Start: Modern 4-Step Stepper -->
+                <div id="fuel-stepper-container" class="stepper-container"
+                    style="margin: 0 auto 30px; padding: 25px; box-shadow: none; border: 1px solid #f1f1f1;">
+                    <div class="stepper">
+                        <div class="stepper-progress-bg"></div>
+                        <div class="stepper-progress-fill"></div>
+
+                        <div class="step active" data-step="1">
+                            <div class="step-icon">🏁</div>
+                            <div class="step-label">Start</div>
+                        </div>
+
+                        <div class="step pending" data-step="2">
+                            <div class="step-icon">⛽</div>
+                            <div class="step-label">Fuel</div>
+                        </div>
+
+                        <div class="step pending" data-step="3">
+                            <div class="step-icon">🚚</div>
+                            <div class="step-label">Deliver</div>
+                        </div>
+
+                        <div class="step pending" data-step="4">
+                            <div class="step-icon">✅</div>
+                            <div class="step-label">Confirm</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End: Modern 4-Step Stepper -->
+            </div>
+
+            <div class="container">
+                <div class="step-container">
+                    <!-- Step 1: Location -->
+                    <div class="step-content active" id="step1">
+                        <div class="step-header text-center">
+                            <h2>Select Delivery Location</h2>
+                            <p>Automatic detection or manual search</p>
+                        </div>
+
+
+
+                        <div class="location-cards-grid grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 max-w-md mx-auto">
+                            <div class="location-card" id="useCurrentLocation">
+                                <div class="location-card-content">
+                                    <div class="location-card-icon">🛰️</div>
+                                    <div class="location-card-text">
+                                        <h4>Detect My Gps Location</h4>
+                                        <p>Browser will ask for permission</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="manual-search-section max-w-md mx-auto">
+                            <p class="text-sm text-center mb-3">Or search for your address</p>
+                            <div class="search-box">
+                                <input type="text" id="manualAddress" placeholder="Enter your delivery address...">
+                                <button id="searchAddress">Search</button>
+                            </div>
+                        </div>
+
+                        <div id="locationDisplay" class="location-display hidden">
+                            <div class="success-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                </svg>
+                            </div>
+                            <div class="location-info">
+                                <h3>Location Confirmed</h3>
+                                <p id="selectedAddress">Street 123, Mumbai</p>
+                                <small id="coordinates">19.0760, 72.8777</small>
+                            </div>
+                            <button id="changeLocation" class="button button-sm">Change</button>
+                        </div>
+
+                        <div id="nearbyPumps" class="nearby-pumps hidden">
+                            <h3>Select Nearby Petrol Pump</h3>
+                            <div id="pumpsList" class="pumps-list">
+                                <!-- Pump cards inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="step-footer">
+                            <button id="continueToFuel" class="button button-primary button-lg" disabled>Continue to
+                                Fuel Options</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Fuel Options -->
+                    <div class="step-content" id="step2">
+                        <div class="step-header">
+                            <div class="step-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v2.5c0 1.66 1.34 3 3 3s3-1.34 3-3V9c0-1.1-.9-2-2-2.03zM18 10c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM8 18H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V8h2v2zm0-4H6V4h2v2z" />
+                                </svg>
+                            </div>
+                            <h2>Fuel Options & Quantity</h2>
+                            <p>Select fuel type and how much you need</p>
+                        </div>
+
+                        <div id="assignedPumpInfo" class="assigned-pump">
+                            <h3>Assigned Petrol Pump</h3>
+                            <div id="pumpDetails">
+                                <!-- Pump info inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="fuel-selection">
+                            <label>Select Fuel Type</label>
+                            <div class="fuel-options">
+                                <div class="fuel-option selected" data-type="petrol" data-price="105.50">
+                                    <div class="fuel-info">
+                                        <h3>Petrol</h3>
+                                        <p>Premium Grade</p>
+                                    </div>
+                                    <div class="fuel-price">₹<span id="petrolPrice">105.50</span>/L</div>
+                                </div>
+                                <div class="fuel-option" data-type="diesel" data-price="94.20">
+                                    <div class="fuel-info">
+                                        <h3>Diesel</h3>
+                                        <p>Turbo Efficient</p>
+                                    </div>
+                                    <div class="fuel-price">₹<span id="dieselPrice">94.20</span>/L</div>
+                                </div>
+                                <div class="fuel-option" data-type="ev" data-price="12.00">
+                                    <div class="fuel-info">
+                                        <h3>EV Charging</h3>
+                                        <p>Fast Charge</p>
+                                    </div>
+                                    <div class="fuel-price">₹<span id="evPrice">12.00</span>/kWh</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quantity-selection">
+                            <label>Quantity <span id="quantityUnit">(Liters)</span></label>
+                            <div class="quantity-input-group">
+                                <button id="decreaseQty" class="qty-btn">-</button>
+                                <input type="number" id="quantityInput" value="10" min="5" max="100">
+                                <button id="increaseQty" class="qty-btn">+</button>
+                            </div>
+                            <p id="quantityHint" class="hint">Minimum 5L, Maximum 100L</p>
+
+                            <div class="preset-quantities">
+                                <button class="preset-qty" data-qty="10">10L</button>
+                                <button class="preset-qty" data-qty="20">20L</button>
+                                <button class="preset-qty" data-qty="50">50L</button>
+                            </div>
+                        </div>
+
+                        <div class="price-summary">
+                            <div class="summary-row">
+                                <span>Fuel Cost</span>
+                                <span id="fuelCost">₹1055.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Delivery Fee</span>
+                                <span id="deliveryFee">₹60.00</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total Amount</span>
+                                <span id="totalCost">₹1104.00</span>
+                            </div>
+                        </div>
+
+                        <div class="step-footer">
+                            <button id="backToLocation" class="button button-outline">Back</button>
+                            <button id="continueToConfirm" class="button button-primary button-lg">Review
+                                Order</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Confirmation -->
+                    <div class="step-content" id="step3">
+                        <div class="step-header">
+                            <div class="step-icon success">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                </svg>
+                            </div>
+                            <h2>Review Your Order</h2>
+                            <p>Final check before we dispatch your fuel</p>
+                        </div>
+
+                        <div id="orderSummary" class="order-summary-box">
+                            <!-- Summary details inserted here -->
+                        </div>
+
+                        <div class="disclaimer">
+                            <p>By placing this order, you agree to our terms of service and safety guidelines
+                                for fuel
+                                delivery.</p>
+                        </div>
+
+                        <div class="step-footer">
+                            <button id="backToFuel" class="button button-outline">Back</button>
+                            <button id="placeOrder" class="button button-accent button-lg">Place Order &
+                                Pay</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Modal -->
+        <div id="loadingModal" class="loading-modal hidden">
+            <div class="loading-card">
+                <div class="loader-spinner"></div>
+                <p id="loadingMessage">Processing...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>© <span id="year"></span> Fuel@Door. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script src="auth_utils.js"></script>
+    <script src="stepper.js"></script>
+    <script src="pricing_utils.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

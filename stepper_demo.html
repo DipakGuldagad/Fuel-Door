@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel@Door - Progress Stepper Demo</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="stepper.css">
+    <style>
+        body {
+            background-color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            background: #f97316;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        button.secondary {
+            background: white;
+            color: #4b5563;
+        }
+
+        h1 {
+            font-family: 'Inter', sans-serif;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        p {
+            font-family: 'Inter', sans-serif;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Fuel@Door Delivery Status</h1>
+    <p>Premium progress tracking component</p>
+
+    <!-- Stepper Component -->
+    <div id="fuel-stepper-container" class="stepper-container">
+        <div class="stepper">
+            <div class="stepper-progress-bg"></div>
+            <div class="stepper-progress-fill"></div>
+
+            <!-- Step 1 -->
+            <div class="step active" data-step="1">
+                <div class="step-icon">
+                    <span>🏁</span>
+                </div>
+                <div class="step-label">Start</div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step pending" data-step="2">
+                <div class="step-icon">
+                    <span>⛽</span>
+                </div>
+                <div class="step-label">Fuel</div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step pending" data-step="3">
+                <div class="step-icon">
+                    <span>🚚</span>
+                </div>
+                <div class="step-label">Deliver</div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step pending" data-step="4">
+                <div class="step-icon">
+                    <span>✅</span>
+                </div>
+                <div class="step-label">Confirm</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Controls -->
+    <div class="controls">
+        <button class="secondary" onclick="fuelStepper.prev()">Previous</button>
+        <button onclick="fuelStepper.next()">Next Step</button>
+    </div>
+
+    <div class="controls" style="margin-top: 15px;">
+        <button class="secondary" onclick="goToStep(1)">1</button>
+        <button class="secondary" onclick="goToStep(2)">2</button>
+        <button class="secondary" onclick="goToStep(3)">3</button>
+        <button class="secondary" onclick="goToStep(4)">4</button>
+    </div>
+
+    <script src="stepper.js"></script>
+</body>
+
+</html>

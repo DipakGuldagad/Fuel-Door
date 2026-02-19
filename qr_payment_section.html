@@ -13,7 +13,7 @@
 
     <!-- QR Code Payment Section -->
     <div class="min-h-screen flex items-center justify-center p-4">
-        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8" id="paymentCard">
 
             <!-- Header -->
             <div class="text-center mb-6">
@@ -25,6 +25,7 @@
             <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 mb-6 text-white text-center">
                 <p class="text-sm opacity-90 mb-1">Total Amount</p>
                 <p class="text-4xl font-bold" id="displayAmount">₹0.00</p>
+                <p class="text-xs opacity-75 mt-2">Order ID: <span id="displayOrderId">-</span></p>
             </div>
 
             <!-- QR Code Container -->
@@ -42,13 +43,81 @@
                 <ol class="text-sm text-blue-700 space-y-1 ml-4 list-decimal">
                     <li>Open any UPI app (Google Pay, PhonePe, Paytm)</li>
                     <li>Scan the QR code above</li>
-                    <li>Verify the amount and complete payment</li>
+                    <li>Verify the amount and Order ID in transaction note</li>
+                    <li>Complete payment and save the UTR number</li>
                 </ol>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="space-y-3">
-                <button onclick="confirmPayment()"
+            <!-- Payment Verification Form (Initially Hidden) -->
+            <div id="verificationForm" class="hidden">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-yellow-800 font-medium">⚠️ Payment Verification Required</p>
+                    <p class="text-xs text-yellow-700 mt-1">Please provide UTR number and payment screenshot for
+                        verification</p>
+                </div>
+
+                <form id="paymentProofForm" class="space-y-4">
+                    <!-- Payment Proof Submission -->
+                    <div class="space-y-6 pt-4">
+
+
+                        <div class="relative">
+                            <label class="block text-sm font-bold text-gray-500 mb-2 ml-1">UTR / Transaction ID</label>
+                            <input type="text" id="utrNumber"
+                                class="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-primary focus:bg-white outline-none transition-all text-lg font-semibold"
+                                placeholder="Enter 12-digit UTR number">
+                            <p id="utrError" class="text-xs text-red-600 mt-1 hidden"></p>
+                        </div>
+
+                        <div class="relative">
+                            <label class="block text-sm font-bold text-gray-500 mb-2 ml-1">Payment Screenshot</label>
+                            <div class="relative">
+                                <input type="file" id="paymentScreenshot" accept="image/*" class="hidden">
+                                <label for="paymentScreenshot"
+                                    class="flex items-center justify-center w-full px-6 py-10 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl hover:border-primary hover:bg-blue-50 cursor-pointer transition-all group">
+                                    <div class="text-center">
+                                        <div
+                                            class="mb-2 inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                                            <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 16v1a2 2 0 002 2h12 a2 2 0 002-2v-1M16 8l-4-4m0 0L8 8m4-4v12">
+                                                </path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm font-bold text-gray-600">Click to upload screenshot</p>
+                                        <p class="text-xs text-gray-400 mt-1">JPEG, PNG up to 5MB</p>
+                                    </div>
+                                </label>
+                            </div>
+                            <p id="screenshotError" class="text-xs text-red-600 mt-1 hidden"></p>
+                        </div>
+
+                        <!-- Amount Confirmation -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Confirm Payment Amount</p>
+                            <p class="text-2xl font-bold text-gray-800" id="confirmAmount">₹0.00</p>
+                        </div>
+
+                        <button type="submit" id="submitProofBtn"
+                            class="w-full px-8 py-5 bg-green-500 text-white rounded-2xl font-bold text-xl shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            <span>I have completed the payment</span>
+                            <div id="loadingSpinner"
+                                class="hidden w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin">
+                            </div>
+                        </button>
+
+                        <p class="text-center text-xs text-gray-400 font-medium px-4">
+                            By clicking above, you confirm that you have transferred the exact amount to the displayed
+                            UPI ID.
+                        </p>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Initial Action Button -->
+            <div id="initialActions" class="space-y-3">
+                <button onclick="showVerificationForm()"
                     class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition duration-300 shadow-md">
                     ✓ I Have Paid
                 </button>
@@ -61,201 +130,473 @@
         </div>
     </div>
 
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script src="pricing_utils.js"></script>
+    <script src="payment_validation.js"></script>
     <script>
         // Configuration
         const UPI_ID = 'dipak.guldagad1305@okhdfcbank';
         const PAYEE_NAME = 'FuelDelivery';
         let currentAmount = 0;
+        let currentOrderId = null;
+        let currentNumericOrderId = null;
         let qrCodeInstance = null;
+        let supabaseClient = null;
+
+        // Initialize Supabase
+        try {
+            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
+                supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            }
+        } catch (err) {
+            console.error('Supabase init failed:', err);
+        }
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', function () {
-            // Try to get amount from URL parameter or localStorage
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlAmount = urlParams.get('amount');
-            const storedAmount = localStorage.getItem('orderAmount');
+            console.log('=== PAYMENT PAGE DEBUG ===');
+            console.log('Full URL:', window.location.href);
 
-            currentAmount = urlAmount || storedAmount || 500; // Default to 500 for demo
-            generateQRCode(currentAmount);
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlOrderId = urlParams.get('orderId'); // This is the display code (e.g., FD23)
+            const urlAmount = urlParams.get('amount');
+
+            console.log('URL parameters:', { urlOrderId, urlAmount });
+
+            const storedOrderData = localStorage.getItem('pendingOrder');
+            console.log('localStorage pendingOrder:', storedOrderData);
+
+            let finalDisplayId = null;
+            let finalNumericId = null;
+            let finalAmount = null;
+
+            // 1. Try URL parameters first
+            if (urlOrderId && urlAmount) {
+                finalDisplayId = urlOrderId;
+                finalAmount = parseFloat(urlAmount);
+                // Extract numeric ID from FD23 -> 23
+                finalNumericId = parseInt(urlOrderId.replace('FD', ''), 10);
+                console.log('✅ Using URL parameters. Numeric ID:', finalNumericId);
+            }
+            // 2. Fallback to localStorage
+            else if (storedOrderData) {
+                try {
+                    const orderData = JSON.parse(storedOrderData);
+                    finalDisplayId = orderData.orderCode || orderData.orderId;
+                    finalAmount = parseFloat(orderData.totalAmount);
+                    finalNumericId = orderData.numericId || parseInt(finalDisplayId.replace('FD', ''), 10);
+                    console.log('✅ Using localStorage data. Numeric ID:', finalNumericId);
+                } catch (e) {
+                    console.error('❌ Error parsing localStorage:', e);
+                }
+            }
+
+            // 3. Validation and UI Update
+            if (!finalDisplayId || isNaN(finalNumericId) || isNaN(finalAmount) || finalAmount <= 0) {
+                console.error('❌ Data validation initial check failed:', { finalDisplayId, finalNumericId, finalAmount });
+                // Attempt to re-calculate if amount is missing but quantity is in storage
+                if (storedOrderData) {
+                    try {
+                        const orderData = JSON.parse(storedOrderData);
+                        if (orderData.quantity && orderData.price) {
+                            const pricing = window.PricingUtils.calculateOrder(orderData.quantity, orderData.price, 0.05);
+                            finalAmount = pricing.totalAmount;
+                            console.log('✅ Re-calculated amount:', finalAmount);
+                        }
+                    } catch (e) { }
+                }
+
+                if (!finalAmount || isNaN(finalAmount)) {
+                    alert('Invalid order data. Please try creating a new order.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+            }
+
+            // Set globals
+            currentOrderId = finalDisplayId;
+            currentNumericOrderId = finalNumericId;
+            currentAmount = finalAmount;
+
+            console.log('📋 Validated Data:', { display: currentOrderId, numeric: currentNumericOrderId, amount: currentAmount });
+
+            generateQRCode(currentAmount, currentOrderId);
+            checkCurrentStatus();
+            setupRealtimeListener();
         });
 
         /**
-         * Generate UPI QR Code
-         * @param {number} amount - Payment amount in INR
+         * Check current order status from database
          */
-        function generateQRCode(amount) {
-            currentAmount = parseFloat(amount);
+        async function checkCurrentStatus() {
+            if (!supabaseClient || !currentNumericOrderId) return;
 
-            // Update display amount
-            document.getElementById('displayAmount').textContent = `₹${currentAmount.toFixed(2)}`;
+            try {
+                const { data: order, error } = await supabaseClient
+                    .from('orders')
+                    .select('payment_status, utr_number')
+                    .eq('id', currentNumericOrderId)
+                    .single();
 
-            // Create UPI payment link
-            const upiLink = `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${currentAmount}&cu=INR`;
+                if (error) throw error;
 
-            // Clear existing QR code
+                if (order && (order.payment_status === 'Verification Pending' || order.payment_status === 'Paid' || order.payment_status === 'Rejected')) {
+                    showStatusView(order.payment_status, order.utr_number);
+                }
+            } catch (err) {
+                console.warn('Could not fetch status:', err);
+            }
+        }
+
+        /**
+         * Setup Supabase Realtime Listener
+         */
+        function setupRealtimeListener() {
+            if (!supabaseClient || !currentNumericOrderId) return;
+
+            console.log('📡 Setting up realtime listener for order:', currentNumericOrderId);
+
+            const channel = supabaseClient
+                .channel(`order-${currentNumericOrderId}`)
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'orders',
+                    filter: `id=eq.${currentNumericOrderId}`
+                }, (payload) => {
+                    console.log('🔄 Order Update Received:', payload.new);
+                    const newStatus = payload.new.payment_status;
+                    const utr = payload.new.utr_number;
+
+                    if (newStatus === 'Paid' || newStatus === 'Rejected' || newStatus === 'Verification Pending') {
+                        console.log('🔄 Status changed, reloading page...');
+                        location.reload();
+                    }
+                })
+                .subscribe();
+        }
+
+        /**
+         * Show toast notification
+         */
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 left-1/2 -translate-x-1/2 px-6 py-4 rounded-2xl shadow-2xl z-50 text-white font-bold transition-all transform scale-90 opacity-0 flex items-center gap-3`;
+
+            if (type === 'success') toast.classList.add('bg-green-600');
+            else if (type === 'error') toast.classList.add('bg-red-600');
+            else toast.classList.add('bg-blue-600');
+
+            toast.innerHTML = `
+                <span class="text-2xl">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('scale-90', 'opacity-0');
+                toast.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            // Animate out
+            setTimeout(() => {
+                toast.classList.remove('scale-100', 'opacity-100');
+                toast.classList.add('scale-90', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        /**
+         * Show appropriate view based on status
+         */
+        function showStatusView(status, utr = '') {
+            if (status === 'Verification Pending') {
+                showSuccessPage(utr);
+            } else if (status === 'Paid') {
+                showPaidView();
+                // Redirect after brief delay
+                setTimeout(() => window.location.href = 'index.html', 5000);
+            } else if (status === 'Rejected') {
+                showRejectedView();
+            }
+        }
+
+        /**
+         * Generate UPI QR Code with Professional Parameters
+         */
+        function generateQRCode(amount, orderId) {
+            console.log('🔍 generateQRCode called:', { amount, orderId });
+
+            const parsedAmount = parseFloat(amount);
+            if (!parsedAmount || isNaN(parsedAmount)) {
+                console.error('❌ Invalid amount for QR:', amount);
+                return;
+            }
+
+            // Update display
+            const displayAmt = document.getElementById('displayAmount');
+            const confirmAmt = document.getElementById('confirmAmount');
+            const displayOrderId = document.getElementById('displayOrderId');
+
+            if (displayAmt) displayAmt.textContent = `₹${parsedAmount.toFixed(2)}`;
+            if (confirmAmt) confirmAmt.textContent = `₹${parsedAmount.toFixed(2)}`;
+            if (displayOrderId) displayOrderId.textContent = orderId;
+
+            // Build Professional UPI Link
+            const upiParams = {
+                pa: UPI_ID,
+                pn: encodeURIComponent('Fuel@Door'),
+                am: parsedAmount.toFixed(2),
+                cu: 'INR',
+                tn: encodeURIComponent(`Fuel@Door Order ${orderId}`),
+                tr: encodeURIComponent(`FD-${orderId}`) // Unique transaction ref
+            };
+
+            const upiLink = `upi://pay?pa=${upiParams.pa}&pn=${upiParams.pn}&am=${upiParams.am}&cu=${upiParams.cu}&tn=${upiParams.tn}&tr=${upiParams.tr}`;
+
+            console.log('🔗 UPI Link:', upiLink);
+
             const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
-
-            // Generate new QR code
-            qrCodeInstance = new QRCode(qrContainer, {
-                text: upiLink,
-                width: 256,
-                height: 256,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            console.log('QR Code generated for amount:', currentAmount);
-            console.log('UPI Link:', upiLink);
-        }
-
-        /**
-         * Regenerate QR Code (for testing)
-         */
-        function regenerateQR() {
-            const newAmount = prompt('Enter amount (INR):', currentAmount);
-            if (newAmount && !isNaN(newAmount) && parseFloat(newAmount) > 0) {
-                generateQRCode(newAmount);
-
-                // Show success message
-                showNotification('QR Code regenerated successfully!', 'success');
-            } else if (newAmount !== null) {
-                showNotification('Please enter a valid amount', 'error');
+            if (qrContainer) {
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: upiLink,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
             }
         }
 
         /**
-         * Handle payment confirmation
+         * Show verification form when user clicks "I Have Paid"
          */
-        function confirmPayment() {
-            const confirmed = confirm('Have you completed the payment of ₹' + currentAmount.toFixed(2) + '?');
-
-            if (confirmed) {
-                // Store payment info
-                const paymentData = {
-                    amount: currentAmount,
-                    upiId: UPI_ID,
-                    timestamp: new Date().toISOString(),
-                    status: 'completed'
-                };
-
-                localStorage.setItem('lastPayment', JSON.stringify(paymentData));
-
-                // Get order data from localStorage
-                const orderData = JSON.parse(localStorage.getItem('pendingOrder') || '{}');
-
-                // Show success page
-                showSuccessPage(orderData);
-            }
+        function showVerificationForm() {
+            document.getElementById('initialActions').classList.add('hidden');
+            document.getElementById('verificationForm').classList.remove('hidden');
         }
 
         /**
-         * Show success page after payment confirmation
+         * Handle payment proof form submission
          */
-        function showSuccessPage(orderData) {
-            // Hide the entire payment section
-            document.querySelector('.min-h-screen').innerHTML = `
-                <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+        document.getElementById('paymentProofForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const utrInput = document.getElementById('utrNumber');
+            const screenshotInput = document.getElementById('paymentScreenshot');
+            const submitBtn = document.getElementById('submitProofBtn');
+            const utrError = document.getElementById('utrError');
+            const screenshotError = document.getElementById('screenshotError');
+
+            // Reset errors
+            utrError.classList.add('hidden');
+            screenshotError.classList.add('hidden');
+
+            // Validate UTR
+            const utrValidation = PaymentValidation.validateUTR(utrInput.value);
+            if (!utrValidation.valid) {
+                utrError.textContent = utrValidation.error;
+                utrError.classList.remove('hidden');
+                return;
+            }
+
+            // Validate screenshot
+            const screenshotFile = screenshotInput.files[0];
+            const screenshotValidation = PaymentValidation.validateScreenshot(screenshotFile);
+            if (!screenshotValidation.valid) {
+                screenshotError.textContent = screenshotValidation.error;
+                screenshotError.classList.remove('hidden');
+                return;
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
+
+            try {
+                if (!supabaseClient) {
+                    throw new Error('Database connection not available');
+                }
+
+                // Upload screenshot to Supabase Storage - Standardized Bucket Name
+                const fileExtension = screenshotFile.name.split('.').pop();
+                const filename = `${currentOrderId}_${Date.now()}.${fileExtension}`;
+
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('payment-screenshots')
+                    .upload(filename, screenshotFile, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
+
+                if (uploadError) throw uploadError;
+
+                // For local preview if needed, we can use createSignedUrl, 
+                // but since we are submitting, we just need the filename for the DB.
+                const { data: signData } = await supabaseClient.storage
+                    .from('payment-screenshots')
+                    .createSignedUrl(filename, 3600);
+
+                const utr_number_val = utrInput.value.trim();
+
+                // Update order in database - Store ONLY the filename/path
+                const { error: updateError } = await supabaseClient
+                    .from('orders')
+                    .update({
+                        utr_number: utr_number_val,
+                        payment_screenshot_url: filename, // Store filename, not full URL
+                        payment_status: 'Verification Pending',
+                        payment_submitted_at: new Date().toISOString()
+                    })
+                    .eq('id', currentNumericOrderId);
+
+                if (updateError) {
+                    throw updateError;
+                }
+
+                // Success - show success page
+                showSuccessPage();
+
+            } catch (error) {
+                console.error('Payment proof submission error:', error);
+                const errorMessage = PaymentValidation.handleUploadError(error);
+                PaymentValidation.showNotification(errorMessage, 'error');
+
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Payment Proof';
+            }
+        });
+
+        /**
+         * Show success page after payment proof submission
+         */
+        function showSuccessPage(utr = null) {
+            const utrVal = utr || document.getElementById('utrNumber')?.value || 'N/A';
+            const paymentCard = document.getElementById('paymentCard');
+            paymentCard.innerHTML = `
+                <div class="animate-in fade-in zoom-in duration-300">
                     <!-- Success Icon -->
+                    <div class="text-center mb-6">
+                        <div class="mx-auto w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-12 h-12 text-orange-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-1">Payment Received</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-600 uppercase tracking-wider">Verification Pending</span>
+                    </div>
+
+                    <!-- Order Details -->
+                    <div class="bg-gray-50 rounded-2xl p-6 mb-6 space-y-4 border border-gray-100">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">Order ID:</span>
+                            <span class="font-bold text-gray-800">${currentOrderId}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">Amount Paid:</span>
+                            <span class="font-bold text-green-600">₹${currentAmount.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">UTR Number:</span>
+                            <span class="font-mono font-bold text-gray-700">${utrVal}</span>
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6">
+                        <p class="text-sm text-blue-800 leading-relaxed">
+                            <strong>🕒 Estimated Waiting Time: 5-10m</strong><br>
+                            The petrol pump staff is verifying your transaction. Please stay on this page or check back in a few minutes.
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <button 
+                        onclick="window.location.href='index.html'" 
+                        class="w-full bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-200 transition-all">
+                        Go Home
+                    </button>
+                </div>
+            `;
+        }
+
+        /**
+         * Show Paid View (Approved)
+         */
+        function showPaidView() {
+            const paymentCard = document.getElementById('paymentCard');
+            paymentCard.innerHTML = `
+                <div class="animate-in fade-in zoom-in duration-500">
                     <div class="text-center mb-6">
                         <div class="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
                             <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
-                        <h2 class="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h2>
-                        <p class="text-gray-600">Your order has been placed successfully</p>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-1">Payment Approved!</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-600 uppercase tracking-wider">Processed</span>
                     </div>
 
-                    <!-- Order Details -->
-                    <div class="bg-gray-50 rounded-xl p-6 mb-6 space-y-3">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Amount Paid</span>
-                            <span class="font-semibold text-gray-800">₹${currentAmount.toFixed(2)}</span>
-                        </div>
-                        ${orderData.fuel_type ? `
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Fuel Type</span>
-                            <span class="font-semibold text-gray-800">${orderData.fuel_type.toUpperCase()}</span>
-                        </div>
-                        ` : ''}
-                        ${orderData.quantity ? `
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Quantity</span>
-                            <span class="font-semibold text-gray-800">${orderData.quantity} ${orderData.unit || 'L'}</span>
-                        </div>
-                        ` : ''}
-                        ${orderData.pump_name ? `
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Petrol Pump</span>
-                            <span class="font-semibold text-gray-800">${orderData.pump_name}</span>
-                        </div>
-                        ` : ''}
-                        ${orderData.pump_location ? `
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Location</span>
-                            <span class="font-semibold text-gray-800">${orderData.pump_location}</span>
-                        </div>
-                        ` : ''}
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Payment Time</span>
-                            <span class="font-semibold text-gray-800">${new Date().toLocaleTimeString()}</span>
-                        </div>
+                    <div class="bg-green-50 border border-green-100 rounded-2xl p-6 mb-6 text-center">
+                        <p class="text-green-800 font-bold text-lg mb-2">✅ Order Successful!</p>
+                        <p class="text-green-700 text-sm">Your fuel is being prepared. Check the dashboard for delivery updates.</p>
                     </div>
 
-                    <!-- Success Message -->
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                        <p class="text-sm text-green-800 font-medium mb-2">✅ Order Confirmed!</p>
-                        <p class="text-sm text-green-700">
-                            Your fuel delivery has been scheduled. The delivery partner will arrive at your location soon.
-                        </p>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="space-y-3">
-                        <button 
-                            onclick="window.location.href='index.html'" 
-                            class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition duration-300 shadow-md">
-                            Back to Home
-                        </button>
-                    </div>
-
-                    <!-- Footer Note -->
-                    <p class="text-xs text-gray-500 text-center mt-6">
-                        Thank you for choosing Fuel@Door!
-                    </p>
+                    <button 
+                        onclick="window.location.href='index.html'" 
+                        class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-green-200 hover:bg-green-700 transition-all">
+                        View Delivery Progress
+                    </button>
+                    
+                    <p class="text-xs text-gray-400 text-center mt-6">Order ID: ${currentOrderId}</p>
                 </div>
             `;
         }
 
         /**
-         * Show notification message
+         * Show Rejected View
          */
-        function showNotification(message, type) {
-            const color = type === 'success' ? 'green' : 'red';
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 bg-${color}-500 text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
+        function showRejectedView() {
+            const paymentCard = document.getElementById('paymentCard');
+            paymentCard.innerHTML = `
+                <div class="animate-in fade-in zoom-in duration-500">
+                    <div class="text-center mb-6">
+                        <div class="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-1">Payment Rejected</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600 uppercase tracking-wider">Action Required</span>
+                    </div>
 
-            setTimeout(() => notification.remove(), 3000);
+                    <div class="bg-red-50 border border-red-100 rounded-2xl p-6 mb-6 text-center">
+                        <p class="text-red-800 font-bold mb-2">❌ We couldn't verify your payment</p>
+                        <p class="text-red-700 text-sm">This may be due to an incorrect UTR number or unclear screenshot. Please try again with correct information.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button 
+                            onclick="window.location.href='order.html'" 
+                            class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-slate-800 transition-all">
+                            Place New Order
+                        </button>
+                        <button 
+                            onclick="window.location.href='index.html'" 
+                            class="w-full text-gray-500 py-3 font-bold text-sm">
+                            Cancel Order
+                        </button>
+                    </div>
+                </div>
+            `;
         }
-
-        /**
-         * Function to set amount from external code (for integration)
-         * Call this from your order confirmation page
-         */
-        function setPaymentAmount(amount) {
-            if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-                generateQRCode(amount);
-                return true;
-            }
-            return false;
-        }
-
-        // Expose function globally for integration
-        window.setPaymentAmount = setPaymentAmount;
     </script>
 
 </body>

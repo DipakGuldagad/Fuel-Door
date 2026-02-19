@@ -62,42 +62,62 @@
 		});
 	})();
 
-	// If user is logged in, we can optionally personalize
-	const user = JSON.parse(localStorage.getItem("fuelAtDoorUser") || "null");
-	const loginCta = document.getElementById("loginCta");
-	if (user && loginCta) {
-		loginCta.textContent = "Account";
+	// 1. Session & Routing Logic
+	const user = window.AuthUtils.getSession();
+	const path = window.location.pathname;
+	const isLoginPage = path.includes("login.html");
+	const isRegisterPage = path.includes("register.html");
+	const isOrderPage = path.includes("order.html");
+	const isIndexPage = path.includes("index.html") || path === "/" || path.endsWith("/");
+	const isAuthPage = isLoginPage || isRegisterPage;
+
+	// Redirection & Protection
+	if (!user && !isAuthPage) {
+		// Protected page but no user -> Login
+		window.location.replace("login.html");
+		return;
 	}
 
-	// Show sections below hero only after login on the homepage; adjust hero CTA accordingly
-	const isLoginPage = document.body.classList.contains("login-page");
-	if (!isLoginPage) {
-		const featuresSectionEl = document.getElementById("features");
-		const orderSectionEl = document.getElementById("order");
-		const footerEl = document.querySelector(".site-footer");
-		const heroCta = document.querySelector(".hero .hero-actions a");
+	if (user && isAuthPage) {
+		// On login/register but already logged in -> Home
+		window.location.replace("index.html");
+		return;
+	}
 
-		function setDisplay(el, visible) {
-			if (!el) return;
-			el.style.display = visible ? "" : "none";
+	// 2. Navigation UI Updates
+	const loginCta = document.getElementById("loginCta");
+	const heroTitle = document.querySelector(".hero-title");
+
+	if (loginCta) {
+		if (user) {
+			loginCta.textContent = "Logout";
+			loginCta.setAttribute("href", "#");
+			loginCta.classList.add("logout-btn");
+			loginCta.onclick = (e) => {
+				e.preventDefault();
+				if (confirm("Are you sure you want to logout?")) {
+					window.AuthUtils.logout();
+				}
+			};
+		} else {
+			loginCta.textContent = "Login";
+			loginCta.setAttribute("href", "login.html");
 		}
+	}
 
-		const isLoggedIn = Boolean(user);
-		setDisplay(featuresSectionEl, isLoggedIn);
-		setDisplay(orderSectionEl, isLoggedIn);
-		setDisplay(footerEl, isLoggedIn);
+	// Dynamic Hero Title
+	if (heroTitle && user && user.full_name) {
+		heroTitle.innerHTML = `Welcome, <span class="highlight">${user.full_name}</span>`;
+	}
 
-		if (heroCta) {
-			if (isLoggedIn && orderSectionEl) {
-				heroCta.setAttribute("href", "#order");
-				heroCta.addEventListener("click", function (e) {
-					e.preventDefault();
-					orderSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
-				});
-			} else {
-				heroCta.setAttribute("href", "login.html");
+	// 3. Page-Specific Initialization
+	if (isOrderPage) {
+		// Auto-initialize order on the order page
+		setTimeout(() => {
+			if (typeof window.initializeOrderProcess === 'function') {
+				window.initializeOrderProcess();
 			}
-		}
+		}, 100);
 	}
 
 	// Supabase client
@@ -111,153 +131,8 @@
 	}
 	const loginsTable = 'logins';
 
-
-	// Login form logic
-	const form = document.getElementById("loginForm");
-	if (!form) return;
-
-	const mobileInput = document.getElementById("mobile");
-	const panInput = document.getElementById("pan");
-
-	const mobileError = document.getElementById("mobileError");
-	const panError = document.getElementById("panError");
-	const formSuccess = document.getElementById("formSuccess");
-	const greetingSection = document.getElementById("greetingSection");
-	const greetingName = document.getElementById("greetingName");
-
-	const patterns = {
-		mobile: /^[6-9][0-9]{9}$/,
-		pan: /^[A-Z]{5}[0-9]{4}[A-Z]$/
-	};
-
-	function validateMobile() {
-		const value = mobileInput.value.trim();
-		if (!patterns.mobile.test(value)) {
-			mobileError.textContent = "Please enter a valid 10-digit mobile number starting with 6-9.";
-			return false;
-		}
-		mobileError.textContent = "";
-		return true;
-	}
-
-	function validatePan() {
-		const value = panInput.value.trim().toUpperCase();
-		panInput.value = value;
-		if (!patterns.pan.test(value)) {
-			panError.textContent = "PAN must be ABCDE1234F (5 letters, 4 digits, 1 letter).";
-			return false;
-		}
-		panError.textContent = "";
-		return true;
-	}
-
-	// Fetch user name from pan_users table and show greeting
-	async function fetchAndShowGreeting(pan) {
-		if (!supabaseClient) {
-			console.warn('Supabase client not available for name fetch');
-			return null;
-		}
-
-		try {
-			const { data, error } = await supabaseClient
-				.from('pan_users')
-				.select('full_name')
-				.eq('pan_number', pan)
-				.single();
-
-			if (error || !data) {
-				console.warn('PAN number not found in pan_users:', error);
-				return null;
-			}
-
-			const fullName = data.full_name;
-
-			// Show greeting with animation
-			if (greetingSection && greetingName) {
-				greetingName.textContent = `Welcome, ${fullName}!`;
-				greetingSection.classList.remove('hidden');
-				setTimeout(() => {
-					greetingSection.classList.add('show');
-				}, 50);
-
-				// Hide form after showing greeting
-				setTimeout(() => {
-					if (form) form.style.opacity = '0.5';
-				}, 100);
-			}
-
-			return fullName;
-		} catch (err) {
-			console.error('Error fetching user name:', err);
-			return null;
-		}
-	}
-
-
-
-	async function performLogin(payload) {
-		// Save user data to database if possible
-		let savedRemotely = false;
-		if (supabaseClient) {
-			try {
-				const { data, error } = await supabaseClient.from(loginsTable).insert(payload).select('id').single();
-				if (!error) {
-					savedRemotely = true;
-					if (data && data.id) localStorage.setItem('fuelAtDoorLoginId', data.id);
-				}
-			} catch (err) {
-				console.warn("Supabase write failed:", err);
-			}
-		}
-
-		// Save to local storage
-		localStorage.setItem("fuelAtDoorUser", JSON.stringify(payload));
-
-		// Show success message briefly
-		formSuccess.textContent = savedRemotely ? "Login successful!" : "Saved locally.";
-
-		// Auto-scroll to order process after 5 seconds
-		setTimeout(() => {
-			// Hide greeting with fade-out
-			if (greetingSection) {
-				greetingSection.classList.remove('show');
-			}
-
-			// Show integrated order process
-			const orderProcessEl = document.getElementById("orderProcess");
-			if (orderProcessEl) {
-				orderProcessEl.style.display = "";
-				orderProcessEl.scrollIntoView({ behavior: "smooth", block: "start" });
-				initializeOrderProcess();
-			}
-		}, 5000); // 5 seconds
-	}
-
-	mobileInput.addEventListener("input", validateMobile);
-	panInput.addEventListener("input", validatePan);
-
-	form.addEventListener("submit", async function (e) {
-		e.preventDefault();
-		const ok = [validateMobile(), validatePan()].every(Boolean);
-		if (!ok) {
-			formSuccess.textContent = "";
-			return;
-		}
-
-		// Fetch user name from PAN
-		const fullName = await fetchAndShowGreeting(panInput.value.trim().toUpperCase());
-
-		const payload = {
-			mobile: mobileInput.value.trim(),
-			pan: panInput.value.trim().toUpperCase(),
-			full_name: fullName || mobileInput.value.trim().substring(0, 10)
-		};
-
-		performLogin(payload);
-	});
-
 	// ====== INTEGRATED ORDER FUEL FUNCTIONALITY ======
-	function initializeOrderProcess() {
+	window.initializeOrderProcess = function () {
 		if (!supabaseClient) {
 			alert('Database not configured. Please check your configuration.');
 			return;
@@ -273,11 +148,14 @@
 		// Constants
 		const PETROL_PUMPS_TABLE = 'petrol_pumps'; // Updated to match existing table name
 		const ORDERS_TABLE = 'orders';
-		const DELIVERY_FEE = 49;
+		// Delivery fee is now calculated via PricingUtils
 
 		// DOM Elements
-		const stepItems = document.querySelectorAll('.step-item');
-		const stepContents = document.querySelectorAll('.step-content');
+		const orderRoot = document.getElementById('order');
+		if (!orderRoot) return;
+
+		const stepItems = orderRoot.querySelectorAll('.step-item');
+		const stepContents = orderRoot.querySelectorAll('.step-content');
 		const loadingModal = document.getElementById('loadingModal');
 		const loadingMessage = document.getElementById('loadingMessage');
 
@@ -328,16 +206,38 @@
 		}
 
 		function updateStepNavigation(step) {
+			console.log('Navigating to step:', step);
+
+			// Sync with the modern 4-step stepper
+			if (window.goToStep) {
+				// Map 3-step logic to 4-step UI
+				// 1 -> 1 (Start/Location)
+				// 2 -> 2 (Fuel)
+				// 3 -> 4 (Confirm)
+				const stepperStep = step === 3 ? 4 : step;
+				window.goToStep(stepperStep);
+			}
+
 			stepItems.forEach((item, index) => {
 				item.classList.toggle('active', index + 1 === step);
 			});
 
 			stepContents.forEach((content, index) => {
 				content.classList.toggle('active', index + 1 === step);
+				// Ensure visibility
+				if (index + 1 === step) {
+					content.style.display = 'block';
+				} else {
+					content.style.display = 'none';
+				}
 			});
 
 			currentStep = step;
+			window.scrollTo({ top: document.getElementById('order').offsetTop - 100, behavior: 'smooth' });
 		}
+
+		// Initial Navigation to Step 1
+		updateStepNavigation(1);
 
 		function calculateDistance(lat1, lon1, lat2, lon2) {
 			const R = 6371; // Earth's radius in kilometers
@@ -398,18 +298,50 @@
 		}
 
 		async function reverseGeocode(lat, lon) {
-			// Return formatted coordinates - no external API needed
-			return `${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E`;
+			try {
+				const apiKey = window.LOCATIONIQ_API_KEY;
+				const baseUrl = window.LOCATIONIQ_BASE_URL;
+
+				if (!apiKey || !baseUrl) {
+					console.warn('LocationIQ config missing, using coordinate fallback');
+					return `${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E`;
+				}
+
+				const response = await fetch(`${baseUrl}/reverse.php?key=${apiKey}&lat=${lat}&lon=${lon}&format=json`);
+				if (!response.ok) throw new Error('Reverse geocoding failed');
+
+				const data = await response.json();
+				return data.display_name || `${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E`;
+			} catch (error) {
+				console.error('Reverse geocoding error:', error);
+				return `${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E`;
+			}
 		}
 
 		async function geocodeAddress(address) {
-			// For manual address entry, use entered address with Mumbai coordinates as default
-			// You can update these coordinates to match your service area
-			return {
-				latitude: 19.0760,
-				longitude: 72.8777,
-				display_name: address.trim()
-			};
+			try {
+				const apiKey = window.LOCATIONIQ_API_KEY;
+				const baseUrl = window.LOCATIONIQ_BASE_URL;
+
+				if (!apiKey || !baseUrl) {
+					throw new Error('Location services not configured');
+				}
+
+				const response = await fetch(`${baseUrl}/search.php?key=${apiKey}&q=${encodeURIComponent(address)}&format=json&limit=1`);
+				if (!response.ok) throw new Error('Geocoding search failed');
+
+				const data = await response.json();
+				if (data.length === 0) throw new Error('No results found for this address');
+
+				return {
+					latitude: parseFloat(data[0].lat),
+					longitude: parseFloat(data[0].lon),
+					display_name: data[0].display_name
+				};
+			} catch (error) {
+				console.error('Geocoding error:', error);
+				throw error;
+			}
 		}
 
 		// Database Functions
@@ -566,7 +498,37 @@ ${recommendedBadge}
 			} catch (error) {
 				hideLoading();
 				console.error('Error:', error);
-				alert('Error: ' + error.message);
+				// Don't alert if it was an auto-prompt failure, just log it
+				console.warn('Geolocation prompt failed or denied:', error.message);
+			}
+		}
+
+		async function handleDemoLocation() {
+			try {
+				showLoading('Loading demo location (Mumbai)...');
+
+				// Mumbai coordinates
+				const lat = 19.0760;
+				const lon = 72.8777;
+				const address = "Mumbai (Demo Location), Maharashtra";
+
+				selectedLocation = {
+					latitude: lat,
+					longitude: lon,
+					address: address
+				};
+
+				showSelectedLocation();
+
+				showLoading('Finding nearest pumps...');
+				const pumps = await findNearestPump(lat, lon);
+				displayNearbyPumps(pumps);
+				hideLoading();
+
+			} catch (error) {
+				hideLoading();
+				console.error('Demo location error:', error);
+				alert('Error loading demo location: ' + error.message);
 			}
 		}
 
@@ -659,10 +621,22 @@ ${recommendedBadge}
 			}
 
 			const quantity = parseInt(quantityInput?.value || '10');
-			const cost = price * quantity;
-			const total = cost + DELIVERY_FEE;
+
+			// Use PricingUtils for dynamic delivery fee
+			const pricing = window.PricingUtils.calculateOrder(quantity, price);
+			const deliveryFee = pricing.deliveryFee;
+			const cost = pricing.fuelCost;
+			const total = pricing.totalAmount;
 
 			if (fuelCost) fuelCost.textContent = `₹${cost.toFixed(2)}`;
+			if (document.getElementById('deliveryFee')) {
+				document.getElementById('deliveryFee').textContent = `₹${deliveryFee.toFixed(2)}`;
+			} else {
+				// Fallback if the element id isn't 'deliveryFee' (it was static in HTML)
+				const deliveryFeeEl = totalCost.closest('.price-summary').querySelector('.summary-row:nth-child(2) span:last-child');
+				if (deliveryFeeEl) deliveryFeeEl.textContent = `₹${deliveryFee.toFixed(2)}`;
+			}
+
 			if (totalCost) totalCost.textContent = `₹${total.toFixed(2)}`;
 
 			// Update quantity labels
@@ -706,8 +680,10 @@ ${recommendedBadge}
 			}
 
 			const quantity = parseInt(quantityInput?.value || '10');
-			const cost = price * quantity;
-			const total = cost + DELIVERY_FEE;
+			const pricing = window.PricingUtils.calculateOrder(quantity, price);
+			const cost = pricing.fuelCost;
+			const deliveryFee = pricing.deliveryFee;
+			const total = pricing.totalAmount;
 
 			const stationName = selectedFuelType === 'ev' ? 'Charging Station' : 'Petrol Pump';
 
@@ -739,7 +715,7 @@ ${recommendedBadge}
 </div>
 <div class="price-row">
 <span>Delivery Fee:</span>
-<span>₹${DELIVERY_FEE}</span>
+<span>₹${deliveryFee.toFixed(2)}</span>
 </div>
 <div class="price-row total">
 <span>Total Amount:</span>
@@ -763,24 +739,30 @@ ${recommendedBadge}
 				}
 
 				const quantity = parseInt(quantityInput?.value || '10');
-				const cost = price * quantity;
-				const total = cost + DELIVERY_FEE;
+				const pricing = window.PricingUtils.calculateOrder(quantity, price);
+				const cost = pricing.fuelCost;
+				const deliveryFee = pricing.deliveryFee;
+				const total = pricing.totalAmount;
 
-				// Get user info from localStorage
-				const user = JSON.parse(localStorage.getItem("fuelAtDoorUser") || "{}");
+				// Get user info from localStorage using AuthUtils
+				const sessionUser = window.AuthUtils.getSession() || {};
+				const user = {
+					full_name: sessionUser.full_name || "Customer",
+					pan: sessionUser.pan_number || "N/A"
+				};
 
 				const orderData = {
 					customer_location: selectedLocation.address,
-					pump_id: nearestPump.id,
-					customer_mobile: user.mobile || 'N/A',
+					assigned_pump_id: nearestPump.id,
+					customer_mobile: 'N/A',
 					customer_pan: user.pan || 'N/A',
-					customer_name: user.full_name || user.mobile || 'Customer',
+					customer_name: user.full_name || 'Customer',
 					fuel_type: selectedFuelType,
 					quantity: quantity,
 					unit: unit,
 					price_per_liter: price,
 					fuel_cost: cost,
-					delivery_fee: DELIVERY_FEE,
+					delivery_fee: deliveryFee,
 					total_amount: total,
 					status: 'pending_payment'
 				};
@@ -841,6 +823,12 @@ ${recommendedBadge}
 							console.log('   - Total:', data.total_amount);
 							console.log('   - Status:', data.status);
 							console.log('   - Created:', data.created_at);
+
+							// Store order ID in pendingOrder as well
+							const pendingOrder = JSON.parse(localStorage.getItem('pendingOrder') || '{}');
+							pendingOrder.orderId = `FD${data.id}`;
+							pendingOrder.orderIdNumeric = data.id;
+							localStorage.setItem('pendingOrder', JSON.stringify(pendingOrder));
 						} else {
 							console.warn('⚠️ Order inserted but no data returned from database');
 						}
@@ -855,8 +843,24 @@ ${recommendedBadge}
 
 				hideLoading();
 
-				// Redirect to QR payment page
-				window.location.href = `qr_payment_section.html?amount=${total.toFixed(2)}`;
+				// Get order ID from localStorage (if saved to DB)
+				const savedOrderId = localStorage.getItem('orderId');
+				const formattedOrderId = savedOrderId ? `FD${savedOrderId}` : null;
+
+				console.log('🔀 Preparing redirect...');
+				console.log('   - Order ID:', formattedOrderId);
+				console.log('   - Amount:', total.toFixed(2));
+
+				// Redirect to QR payment page WITH orderId if available
+				if (formattedOrderId) {
+					const redirectUrl = `qr_payment_section.html?orderId=${encodeURIComponent(formattedOrderId)}&amount=${encodeURIComponent(total.toFixed(2))}`;
+					console.log('   - Redirect URL:', redirectUrl);
+					window.location.href = redirectUrl;
+				} else {
+					// Fallback: redirect with amount only (localStorage will be used)
+					console.warn('⚠️ No order ID available, redirecting with amount only');
+					window.location.href = `qr_payment_section.html?amount=${total.toFixed(2)}`;
+				}
 
 			} catch (error) {
 				hideLoading();
@@ -870,11 +874,18 @@ ${recommendedBadge}
 			useCurrentLocationBtn.addEventListener('click', handleCurrentLocation);
 		}
 
-		if (searchAddressBtn) {
-			searchAddressBtn.addEventListener('click', handleAddressSearch);
+		// Demo Location Button
+		const useDemoLocationBtn = document.getElementById('useDemoLocation');
+		if (useDemoLocationBtn) {
+			useDemoLocationBtn.addEventListener('click', handleDemoLocation);
 		}
+
 		if (changeLocationBtn) {
 			changeLocationBtn.addEventListener('click', hideSelectedLocation);
+		}
+
+		if (searchAddressBtn) {
+			searchAddressBtn.addEventListener('click', handleAddressSearch);
 		}
 
 		// Step navigation
@@ -960,6 +971,12 @@ ${recommendedBadge}
 			selectedFuelType = fuelOptions[0].getAttribute('data-type');
 			updateQuantityLabels(); // Initialize quantity labels
 		}
+
+		// Initial Setup - Auto-trigger geolocation
+		setTimeout(() => {
+			console.log('🚀 Auto-triggering geolocation...');
+			handleCurrentLocation();
+		}, 500);
 	}
 
 })();

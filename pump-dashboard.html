@@ -16,11 +16,30 @@
 					colors: {
 						primary: '#f97316',
 						'primary-hover': '#ea580c',
+					},
+					animation: {
+						'fade-in': 'fadeIn 0.5s ease-out forwards',
+					},
+					keyframes: {
+						fadeIn: {
+							'0%': { opacity: '0', transform: 'translateY(10px)' },
+							'100%': { opacity: '1', transform: 'translateY(0)' },
+						}
 					}
 				}
 			}
 		}
 	</script>
+	<style>
+		.no-scrollbar::-webkit-scrollbar {
+			display: none;
+		}
+
+		.no-scrollbar {
+			-ms-overflow-style: none;
+			scrollbar-width: none;
+		}
+	</style>
 </head>
 
 <body class="bg-slate-50 text-slate-900 min-h-screen">
@@ -94,13 +113,61 @@
 			</div>
 		</div>
 
+		<!-- Payment Verification Section (Moved to Top) -->
+		<div id="paymentVerificationSection"
+			class="bg-white rounded-xl shadow-sm border border-slate-200 mt-0 mb-8 overflow-hidden animate-fade-in">
+			<div class="p-6 border-b border-slate-200 bg-slate-50/50">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-3">
+						<div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+							<svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+									d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+						</div>
+						<h2 class="text-xl font-semibold text-slate-900">Payment Verification</h2>
+					</div>
+					<div class="flex items-center gap-2">
+						<span id="pendingPaymentsCount"
+							class="px-3 py-1 bg-orange-500 text-white rounded-full text-xs font-bold shadow-sm shadow-orange-200 animate-pulse">0
+							Pending</span>
+					</div>
+				</div>
+			</div>
+			<div class="p-0">
+				<div id="paymentsContainer">
+					<div id="loadingPayments" class="text-center py-12">
+						<div
+							class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4">
+						</div>
+						<p class="text-slate-600">Checking for new payments...</p>
+					</div>
+					<div id="noPayments" class="text-center py-12 hidden">
+						<div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+									d="M5 13l4 4L19 7"></path>
+							</svg>
+						</div>
+						<h3 class="text-lg font-medium text-slate-900 mb-2">Queue is Empty</h3>
+						<p class="text-slate-500 text-sm">All payments have been verified.</p>
+					</div>
+					<div id="paymentsList"
+						class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 divide-x divide-y divide-slate-100 hidden">
+						<!-- Pending payments will be dynamically populated here -->
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<!-- Dashboard Stats -->
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+			<!-- ... (Stats cards keep existing IDs for JS) -->
 			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
 				<div class="flex items-center justify-between">
 					<div>
 						<p class="text-slate-500 text-sm">Total Orders</p>
-						<p class="text-2xl font-bold text-slate-900">0</p>
+						<p id="totalOrdersCount" class="text-2xl font-bold text-slate-900">0</p>
 					</div>
 					<div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
 						<svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -115,7 +182,7 @@
 				<div class="flex items-center justify-between">
 					<div>
 						<p class="text-slate-500 text-sm">Pending Orders</p>
-						<p class="text-2xl font-bold text-slate-900">0</p>
+						<p id="pendingOrdersCount" class="text-2xl font-bold text-slate-900">0</p>
 					</div>
 					<div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
 						<svg class="w-6 h-6 text-orange-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -129,8 +196,8 @@
 			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-slate-500 text-sm">Revenue (This Month)</p>
-						<p class="text-2xl font-bold text-slate-900">₹0</p>
+						<p class="text-slate-500 text-sm">Revenue (Month)</p>
+						<p id="monthlyRevenue" class="text-2xl font-bold text-slate-900">₹0</p>
 					</div>
 					<div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
 						<svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -187,18 +254,22 @@
 				</div>
 			</div>
 		</div>
+
+
 	</main>
 
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
 	<script src="config.js"></script>
 	<script>
+		document.addEventListener("DOMContentLoaded", function () {
 			(function () {
 				// Initialize Supabase client
-				const supa = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-				if (!supa) {
+				window.supa = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+				if (!window.supa) {
 					alert('Supabase not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in config.js');
 					return;
 				}
+				const supa = window.supa; // Local alias for internal use
 
 				// DOM Elements
 				const pumpName = document.getElementById('pumpName');
@@ -217,10 +288,11 @@
 
 				// Constants
 				const PETROL_PUMPS_TABLE = 'petrol_pumps';
-				const ORDERS_TABLE = 'orders';
+				window.ORDERS_TABLE = 'orders';
+				const ORDERS_TABLE = window.ORDERS_TABLE; // Local alias
 
-				// Global variables
-				let currentPumpId = null;
+				// Global variables (exposed to window for payment_verification.js)
+				window.currentPumpId = null;
 				let realtimeChannel = null;
 
 				// Check authentication and load pump data
@@ -253,12 +325,12 @@
 
 						if (error || !pumpData) {
 							console.error('Error loading pump data:', error);
-							throw new Error('Unable to load pump data: ' + (error?.message || 'Pump not found'));
+							throw new Error(`Unable to load pump data: ${error?.message || 'Pump profile not found for user ID ' + auth.userId}`);
 						}
 
 						// Store current pump ID for order filtering
-						currentPumpId = pumpData.id;
-						console.log('Loaded pump ID:', currentPumpId);
+						window.currentPumpId = pumpData.id;
+						console.log('Loaded pump ID:', window.currentPumpId);
 						console.log('Pump details:', {
 							id: pumpData.id,
 							user_id: pumpData.user_id,
@@ -280,20 +352,23 @@
 						// Load assigned orders
 						await loadAssignedOrders();
 
+						// Load pending payments for verification
+						await loadPendingPayments();
+
 						// Set up realtime subscription
 						setupRealtimeSubscription();
 
 					} catch (error) {
 						console.error('Dashboard load error:', error);
-						alert('Unable to load dashboard. Please login again.');
-						localStorage.removeItem('pumpAuth');
-						window.location.href = 'pump.html';
+						alert(`Unable to load dashboard:\n${error.message}\n\nPlease check if your account is active and try again.`);
+						// localStorage.removeItem('pumpAuth'); // Don't remove yet for debugging
+						// window.location.href = 'pump.html';
 					}
 				}
 
 				// Load assigned orders for the current pump
 				async function loadAssignedOrders() {
-					if (!currentPumpId) {
+					if (!window.currentPumpId) {
 						console.error('No pump ID available for loading orders');
 						showErrorState('Unable to load orders: No pump ID');
 						return;
@@ -303,15 +378,16 @@
 
 					try {
 						console.log('🔍 Loading orders...');
-						console.log('   - Pump ID:', currentPumpId);
-						console.log('   - Pump ID type:', typeof currentPumpId);
+						const pumpId = window.currentPumpId;
+						console.log('   - Pump ID:', pumpId);
+						console.log('   - Pump ID type:', typeof pumpId);
 						console.log('   - Table:', ORDERS_TABLE);
-						console.log('   - Filter: pump_id =', currentPumpId);
+						console.log('   - Filter: assigned_pump_id =', pumpId);
 
 						const { data: orders, error } = await supa
 							.from(ORDERS_TABLE)
 							.select('*')
-							.eq('pump_id', currentPumpId)
+							.eq('assigned_pump_id', window.currentPumpId)
 							.order('created_at', { ascending: false });
 
 						if (error) {
@@ -338,14 +414,15 @@
 							console.warn('   - Checking if pump ID exists in database...');
 
 							// Debug: Check all orders to see what pump IDs exist
-							const { data: allOrders } = await supa.from(ORDERS_TABLE).select('id, pump_id, customer_name');
+							const { data: allOrders } = await supa.from(ORDERS_TABLE).select('id, assigned_pump_id, customer_name');
 							console.log('   - Total orders in database:', allOrders?.length || 0);
 							if (allOrders && allOrders.length > 0) {
-								console.log('   - Pump IDs found in orders:', [...new Set(allOrders.map(o => o.pump_id))]);
+								console.log('   - Pump IDs found in orders:', [...new Set(allOrders.map(o => o.assigned_pump_id))]);
 							}
 						}
 
 						displayOrders(orders || []);
+						updateDashboardStats(orders || []);
 
 					} catch (error) {
 						console.error('❌ Error loading orders:', error);
@@ -353,27 +430,53 @@
 					}
 				}
 
+				// Update dashboard stats safely
+				function updateDashboardStats(orders) {
+					const totalStats = {
+						total: orders.length,
+						pending: orders.filter(o => o.status === 'pending').length,
+						revenue: orders
+							.filter(o => o.status === 'delivered')
+							.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0)
+					};
+
+					const els = {
+						total: document.getElementById('totalOrdersCount'),
+						pending: document.getElementById('pendingOrdersCount'),
+						revenue: document.getElementById('monthlyRevenue')
+					};
+
+					if (els.total) els.total.textContent = totalStats.total;
+					if (els.pending) els.pending.textContent = totalStats.pending;
+					if (els.revenue) els.revenue.textContent = `₹${totalStats.revenue.toLocaleString('en-IN')}`;
+				}
+
 				// Display orders in the UI
 				function displayOrders(orders) {
 					hideLoadingState();
 
-					if (orders.length === 0) {
-						showNoOrdersState();
-						return;
+					if (orders && orders.length > 0) {
+						// Safe UI updates with null checks
+						if (noOrders) noOrders.classList.add('hidden');
+						if (ordersList) ordersList.classList.remove('hidden');
+					} else {
+						if (noOrders) noOrders.classList.remove('hidden');
+						if (ordersList) ordersList.classList.add('hidden');
 					}
 
 					// Clear existing orders
-					ordersList.innerHTML = '';
-
-					// Create order cards
-					orders.forEach(order => {
-						const orderCard = createOrderCard(order);
-						ordersList.appendChild(orderCard);
-					});
+					if (ordersList) {
+						ordersList.innerHTML = '';
+						// Create order cards
+						orders.forEach(order => {
+							const orderCard = createOrderCard(order);
+							ordersList.appendChild(orderCard);
+						});
+					}
 
 					// Show orders list
-					ordersList.classList.remove('hidden');
-					noOrders.classList.add('hidden');
+					if (ordersList) ordersList.classList.remove('hidden');
+					if (noOrders) noOrders.classList.add('hidden');
 				}
 
 				// Create an order card element
@@ -507,7 +610,7 @@
 								event: '*',
 								schema: 'public',
 								table: ORDERS_TABLE,
-								filter: `pump_id=eq.${currentPumpId}`
+								filter: `assigned_pump_id=eq.${window.currentPumpId}`
 							},
 							(payload) => {
 								console.log('Order change:', payload);
@@ -540,8 +643,8 @@
 				// Add new order to UI
 				function addNewOrderToUI(order) {
 					// Hide no orders state if shown
-					noOrders.classList.add('hidden');
-					ordersList.classList.remove('hidden');
+					if (noOrders) noOrders.classList.add('hidden');
+					if (ordersList) ordersList.classList.remove('hidden');
 
 					// Create and insert new order card at the top
 					const newOrderCard = createOrderCard(order);
@@ -592,8 +695,10 @@
 
 				// Update realtime connection status
 				function updateRealtimeStatus(status) {
+					if (!realtimeStatus) return;
 					const statusElement = realtimeStatus.querySelector('span');
 					const dotElement = realtimeStatus.querySelector('div');
+					if (!statusElement || !dotElement) return;
 
 					switch (status) {
 						case 'SUBSCRIBED':
@@ -616,34 +721,37 @@
 
 				// UI state management functions
 				function showLoadingState() {
-					loadingOrders.classList.remove('hidden');
-					noOrders.classList.add('hidden');
-					ordersList.classList.add('hidden');
+					if (loadingOrders) loadingOrders.classList.remove('hidden');
+					if (noOrders) noOrders.classList.add('hidden');
+					if (ordersList) ordersList.classList.add('hidden');
 				}
 
 				function hideLoadingState() {
-					loadingOrders.classList.add('hidden');
+					if (loadingOrders) loadingOrders.classList.add('hidden');
 				}
 
 				function showNoOrdersState() {
 					hideLoadingState();
-					noOrders.classList.remove('hidden');
-					ordersList.classList.add('hidden');
+					if (noOrders) noOrders.classList.remove('hidden');
+					if (ordersList) ordersList.classList.add('hidden');
 				}
 
 				function showErrorState(message) {
 					hideLoadingState();
-					ordersList.innerHTML = `<div class="text-center py-12 text-red-600">${message}</div>`;
-					ordersList.classList.remove('hidden');
-					noOrders.classList.add('hidden');
+					if (ordersList) {
+						ordersList.innerHTML = `<div class="text-center py-12 text-red-600">${message}</div>`;
+						ordersList.classList.remove('hidden');
+					}
+					if (noOrders) noOrders.classList.add('hidden');
 				}
 
 				// Utility function to escape HTML
-				function escapeHtml(text) {
+				window.escapeHtml = function (text) {
 					const div = document.createElement('div');
 					div.textContent = text;
 					return div.innerHTML;
-				}
+				};
+				const escapeHtml = window.escapeHtml; // Local alias
 
 				// Logout functionality
 				function logout() {
@@ -655,11 +763,11 @@
 				}
 
 				// Event listeners
-				logoutBtn.addEventListener('click', logout);
-				editProfileBtn.addEventListener('click', () => {
+				if (logoutBtn) logoutBtn.addEventListener('click', logout);
+				if (editProfileBtn) editProfileBtn.addEventListener('click', () => {
 					alert('Edit profile feature coming soon!');
 				});
-				refreshOrdersBtn.addEventListener('click', loadAssignedOrders);
+				if (refreshOrdersBtn) refreshOrdersBtn.addEventListener('click', loadAssignedOrders);
 
 				// Initialize dashboard on page load
 				loadPumpDashboard();
@@ -672,7 +780,24 @@
 				});
 
 			})();
+		});
 	</script>
+
+	<!-- Screenshot Modal -->
+	<div id="screenshotModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center p-4">
+		<div class="relative max-w-4xl w-full">
+			<button onclick="closeScreenshotModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 z-10">
+				<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+					</path>
+				</svg>
+			</button>
+			<img id="modalScreenshot" src="" alt="Payment Screenshot" class="w-full h-auto rounded-lg shadow-2xl">
+		</div>
+	</div>
+
+	<!-- Payment Verification Script -->
+	<script src="payment_verification.js"></script>
 </body>
 
 </html>

@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login — Fuel@Door</title>
+    <title>Register — Fuel@Door</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -30,27 +30,33 @@
         <section class="section">
             <div class="container narrow">
                 <div id="authContainer">
-                    <h1 class="section-title">Sign In</h1>
-                    <p class="section-subtitle">Access your account using your PAN number</p>
+                    <h1 class="section-title">Join Fuel@Door</h1>
+                    <p class="section-subtitle">Create your account to start ordering fuel</p>
 
-                    <div id="loginUI" class="auth-section active">
-                        <form id="loginForm" novalidate>
+                    <div id="registerUI" class="auth-section active">
+                        <form id="registerForm" novalidate>
                             <div class="form-field">
-                                <label for="loginPan">PAN Card Number</label>
-                                <input type="text" id="loginPan" placeholder="ABCDE1234F" maxlength="10"
+                                <label for="regPan">PAN Card Number</label>
+                                <input type="text" id="regPan" placeholder="ABCDE1234F" maxlength="10"
                                     autocomplete="off" />
                                 <small class="hint">Format: 5 letters, 4 digits, 1 letter</small>
-                                <small class="error-message" id="loginPanError"></small>
+                                <small class="error-message" id="regPanError"></small>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="regName">Full Name</label>
+                                <input type="text" id="regName" placeholder="Enter your full name" />
+                                <small class="error-message" id="regNameError"></small>
                             </div>
 
                             <div class="form-actions">
-                                <button type="submit" id="loginBtn" class="button button-primary button-lg">Sign
-                                    In</button>
+                                <button type="submit" id="regBtn" class="button button-primary button-lg"
+                                    disabled>Create Account</button>
                             </div>
                         </form>
 
                         <div class="auth-footer">
-                            <p>Don't have an account? <a href="register.html">Register here</a></p>
+                            <p>Already have an account? <a href="login.html">Sign in here</a></p>
                         </div>
                     </div>
                 </div>
@@ -58,16 +64,14 @@
                 <!-- Greeting Section (Hidden by default) -->
                 <div id="greetingSection" class="greeting-section hidden">
                     <div class="greeting-content">
-                        <div class="greeting-icon">👋</div>
+                        <div class="greeting-icon">✅</div>
                         <h2 id="greetingName" class="greeting-name">Welcome!</h2>
-                        <p class="greeting-message">Your profile has been loaded successfully</p>
-                        <p class="section-subtitle mt-4">Profile synchronized. Preparing your order dashboard...</p>
+                        <p class="greeting-message">Your account has been created successfully</p>
+                        <p class="section-subtitle mt-4">Redirecting you to the dashboard...</p>
                     </div>
                 </div>
-
             </div>
         </section>
-    </main>
     </main>
 
     <footer class="site-footer">
@@ -79,7 +83,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
     <script src="config.js"></script>
     <script src="auth_utils.js"></script>
-    <script src="login.js"></script>
+    <script src="register.js"></script>
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
     </script>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Test - Order Creation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-2xl font-bold mb-4">🔍 Quick Diagnostic Test</h1>
+
+        <div class="space-y-4">
+            <button onclick="testOrderCreation()"
+                class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Test Order Creation
+            </button>
+
+            <button onclick="checkRLS()" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                Check RLS Policies
+            </button>
+
+            <button onclick="checkLocalStorage()"
+                class="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                Check LocalStorage
+            </button>
+        </div>
+
+        <div id="results" class="mt-6 p-4 bg-gray-50 rounded-lg font-mono text-sm whitespace-pre-wrap"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script>
+        const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+        const results = document.getElementById('results');
+
+        async function testOrderCreation() {
+            results.textContent = '🔄 Testing order creation...\n\n';
+
+            const testOrder = {
+                customer_name: 'Test Customer',
+                customer_mobile: '9876543210',
+                fuel_type: 'petrol',
+                quantity: 10,
+                unit: 'liters',
+                price_per_liter: 100,
+                customer_location: 'Test Address',
+                pincode: '123456',
+                delivery_time: '10:00',
+                assigned_pump_id: 1,
+                fuel_cost: 1000,
+                delivery_fee: 50,
+                total_amount: 1050,
+                status: 'pending',
+                payment_status: 'Pending',
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .insert([testOrder])
+                    .select('id')
+                    .single();
+
+                if (error) {
+                    results.textContent += `❌ ERROR:\n${JSON.stringify(error, null, 2)}\n\n`;
+
+                    if (error.message.includes('row-level security')) {
+                        results.textContent += `\n🔧 FIX NEEDED:\nRun this SQL in Supabase SQL Editor:\n\n`;
+                        results.textContent += `CREATE POLICY "Allow anon insert orders"\n`;
+                        results.textContent += `ON public.orders FOR INSERT TO anon WITH CHECK (true);\n`;
+                    }
+                } else {
+                    results.textContent += `✅ SUCCESS!\n`;
+                    results.textContent += `Order ID: ${data.id}\n`;
+                    results.textContent += `Formatted: FD${data.id}\n\n`;
+                    results.textContent += `Order creation is WORKING!\n`;
+                    results.textContent += `The NaN issue is NOT from RLS.\n`;
+                }
+            } catch (err) {
+                results.textContent += `❌ EXCEPTION:\n${err.message}\n`;
+            }
+        }
+
+        async function checkRLS() {
+            results.textContent = '🔄 Checking RLS policies...\n\n';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .rpc('exec_sql', {
+                        sql: `SELECT policyname, cmd FROM pg_policies WHERE tablename = 'orders'`
+                    });
+
+                if (error) {
+                    results.textContent += `Cannot check policies directly.\n`;
+                    results.textContent += `Try the "Test Order Creation" button instead.\n`;
+                } else {
+                    results.textContent += `Policies found:\n${JSON.stringify(data, null, 2)}\n`;
+                }
+            } catch (err) {
+                results.textContent += `Try "Test Order Creation" button instead.\n`;
+            }
+        }
+
+        function checkLocalStorage() {
+            results.textContent = '📦 LocalStorage Contents:\n\n';
+
+            const pendingOrder = localStorage.getItem('pendingOrder');
+            const fuelOrder = localStorage.getItem('fuelAtDoorOrder');
+            const userData = localStorage.getItem('fuelAtDoorUser');
+
+            results.textContent += `pendingOrder:\n${pendingOrder || '(empty)'}\n\n`;
+            results.textContent += `fuelAtDoorOrder:\n${fuelOrder || '(empty)'}\n\n`;
+            results.textContent += `fuelAtDoorUser:\n${userData || '(empty)'}\n`;
+        }
+    </script>
+</body>
+
+</html>

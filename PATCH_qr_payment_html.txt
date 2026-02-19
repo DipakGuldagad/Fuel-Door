@@ -1,0 +1,71 @@
+// ============================================================================
+// COPY THIS ENTIRE SECTION
+// Replace the window.addEventListener('DOMContentLoaded'...) section
+// in qr_payment_section.html (around line 138-158) with this code
+// ============================================================================
+
+        window.addEventListener('DOMContentLoaded', function () {
+            console.log('=== PAYMENT PAGE LOADED ===');
+            console.log('Full URL:', window.location.href);
+
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlOrderId = urlParams.get('orderId');
+            const urlAmount = urlParams.get('amount');
+
+            console.log('URL Parameters:', { orderId: urlOrderId, amount: urlAmount });
+
+            // Get localStorage backup
+            const storedOrderData = localStorage.getItem('pendingOrder');
+            console.log('localStorage pendingOrder:', storedOrderData);
+
+            let finalOrderId = null;
+            let finalAmount = null;
+
+            // Try URL params first
+            if (urlOrderId && urlAmount) {
+                finalOrderId = urlOrderId;
+                finalAmount = parseFloat(urlAmount);
+                console.log('✅ Using URL parameters');
+            }
+            // Fallback to localStorage
+            else if (storedOrderData) {
+                try {
+                    const orderData = JSON.parse(storedOrderData);
+                    finalOrderId = orderData.orderId;
+                    finalAmount = parseFloat(orderData.totalAmount);
+                    console.log('✅ Using localStorage data');
+                } catch (e) {
+                    console.error('Error parsing localStorage:', e);
+                }
+            }
+
+            // Validate Order ID
+            if (!finalOrderId || finalOrderId === 'undefined' || finalOrderId === 'null') {
+                console.error('❌ Invalid Order ID:', finalOrderId);
+                PaymentValidation.showNotification('Order ID missing. Please create a new order.', 'error');
+                setTimeout(() => window.location.href = 'order-summary.html', 2000);
+                return;
+            }
+
+            // Validate Amount
+            if (!finalAmount || isNaN(finalAmount) || finalAmount <= 0) {
+                console.error('❌ Invalid amount:', finalAmount);
+                PaymentValidation.showNotification('Invalid amount. Please create a new order.', 'error');
+                setTimeout(() => window.location.href = 'order-summary.html', 2000);
+                return;
+            }
+
+            // Store globally
+            currentOrderId = finalOrderId;
+            currentAmount = finalAmount;
+
+            console.log('✅ Final validated data:', { orderId: currentOrderId, amount: currentAmount });
+
+            // Generate QR code with validated data
+            generateQRCode(currentAmount, currentOrderId);
+        });
+
+// ============================================================================
+// END OF SECTION TO COPY
+// ============================================================================

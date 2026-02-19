@@ -1,0 +1,89 @@
+// ============================================================================
+// COPY THIS ENTIRE SECTION
+// Replace lines 218-263 in summary.js with this code
+// ============================================================================
+
+        try {
+            if (!supabaseClient) {
+                throw new Error("Database connection not available");
+            }
+
+            console.log('📦 Submitting order payload:', orderPayload);
+
+            const { data, error } = await supabaseClient
+                .from(ordersTable)
+                .insert([orderPayload])
+                .select('id')
+                .single();
+
+            console.log('📥 Database response:', { data, error });
+
+            if (error) {
+                console.error('❌ Database error:', error);
+                throw new Error(error.message);
+            }
+
+            // CRITICAL: Validate that ID was returned
+            if (!data || !data.id) {
+                console.error('❌ No ID returned from database');
+                throw new Error('Order created but ID not returned. Please try again.');
+            }
+
+            console.log('✅ Order created with ID:', data.id);
+
+            // Generate Order ID in format: FD{orderId}
+            const orderId = `FD${data.id}`;
+            console.log('📋 Formatted Order ID:', orderId);
+
+            // Store order data for payment page
+            const pendingOrderData = {
+                orderId: orderId,
+                totalAmount: parseFloat(total.toFixed(2)),
+                fuel_type: orderData.type,
+                quantity: orderData.quantity,
+                unit: orderData.unit,
+                pump_name: selectedPumpText.split(' - ')[0],
+                pump_location: selectedPumpText.split(' - ')[1]?.split(' (')[0]
+            };
+            localStorage.setItem('pendingOrder', JSON.stringify(pendingOrderData));
+            console.log('💾 Stored in localStorage:', pendingOrderData);
+
+            // Clear old order data
+            localStorage.removeItem("fuelAtDoorOrder");
+
+            // Build redirect URL with BOTH parameters
+            const redirectUrl = `qr_payment_section.html?orderId=${encodeURIComponent(orderId)}&amount=${encodeURIComponent(total.toFixed(2))}`;
+            console.log('🔀 Redirecting to:', redirectUrl);
+
+            // Show success message
+            orderSuccess.innerHTML = `
+                <div style="color: #059669; padding: 1rem; background: #d1fae5; border-radius: 0.5rem;">
+                    <strong>✅ Order Created!</strong><br>
+                    Order ID: ${orderId}<br>
+                    Amount: ₹${total.toFixed(2)}<br>
+                    Redirecting to payment...
+                </div>
+            `;
+
+            // Redirect to payment page
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, 1500);
+
+        } catch (error) {
+            console.error("❌ Order submission error:", error);
+            orderSuccess.innerHTML = `
+                <div style="color: #dc2626; padding: 1rem; background: #fee2e2; border-radius: 0.5rem;">
+                    <strong>❌ Order submission failed:</strong><br>
+                    ${error.message}<br><br>
+                    ${error.message.includes('row-level security') ? 
+                        '<strong>Fix:</strong> Run fix_rls_policies.sql in Supabase SQL Editor' : 
+                        '<small>Please try again or contact support.</small>'}
+                </div>
+            `;
+        }
+    });
+
+// ============================================================================
+// END OF SECTION TO COPY
+// ============================================================================

@@ -1,89 +1,187 @@
--- Fix Row Level Security (RLS) policies for orders table
--- Run this in your Supabase SQL Editor to allow order placement
+-- ============================================================================
+-- FIX: Row Level Security Policies for Fuel@Door Payment System
+-- ============================================================================
+-- This script fixes RLS issues preventing:
+-- 1. Order insertion
+-- 2. Payment screenshot uploads
+-- 3. Order status updates
+--
+-- Run this in Supabase SQL Editor
+-- ============================================================================
 
--- First, let's check the current RLS status
-SELECT schemaname, tablename, rowsecurity 
+-- ============================================================================
+-- PART 1: Orders Table RLS Policies
+-- ============================================================================
+
+-- First, check if RLS is enabled on orders table
+SELECT tablename, rowsecurity 
 FROM pg_tables 
-WHERE tablename = 'orders' AND schemaname = 'public';
+WHERE schemaname = 'public' AND tablename = 'orders';
 
--- Check existing policies on orders table
-SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
-FROM pg_policies 
-WHERE tablename = 'orders' AND schemaname = 'public';
-
--- Option 1: Disable RLS entirely for orders table (simplest solution)
--- This allows all operations on the orders table
-ALTER TABLE public.orders DISABLE ROW LEVEL SECURITY;
-
--- Option 2: If you want to keep RLS enabled but allow operations, create policies
--- Uncomment the lines below if you prefer to use RLS with policies
-
-/*
--- Enable RLS (if not already enabled)
+-- Enable RLS on orders table (if not already enabled)
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
--- Policy to allow anyone to insert orders (for customer order placement)
-CREATE POLICY "Allow insert orders" ON public.orders
-    FOR INSERT
-    WITH CHECK (true);
+-- Drop existing policies to start fresh (safe - will recreate)
+DROP POLICY IF EXISTS "Allow public insert orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow public read orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow public update orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow anon insert orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow anon read orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow anon update orders" ON public.orders;
 
--- Policy to allow users to view their own orders (by customer_mobile)
-CREATE POLICY "Allow view own orders" ON public.orders
-    FOR SELECT
-    USING (true); -- Change to USING (auth.jwt() ->> 'phone' = customer_mobile) for user-specific access
+-- ============================================================================
+-- POLICY 1: Allow INSERT for anonymous users (order creation)
+-- ============================================================================
+-- This allows customers to create orders using the anon key
+CREATE POLICY "Allow anon insert orders"
+ON public.orders
+FOR INSERT
+TO anon
+WITH CHECK (true);
 
--- Policy to allow pump owners to view assigned orders
-CREATE POLICY "Allow pump view assigned orders" ON public.orders
-    FOR SELECT
-    USING (true); -- You can add more specific logic here
+-- ============================================================================
+-- POLICY 2: Allow SELECT for anonymous users (read orders)
+-- ============================================================================
+-- This allows customers to read their orders and pumps to see assigned orders
+CREATE POLICY "Allow anon read orders"
+ON public.orders
+FOR SELECT
+TO anon
+USING (true);
 
--- Policy to allow pump owners to update assigned orders status
-CREATE POLICY "Allow pump update assigned orders" ON public.orders
-    FOR UPDATE
-    USING (true)
-    WITH CHECK (true);
+-- ============================================================================
+-- POLICY 3: Allow UPDATE for anonymous users (payment status updates)
+-- ============================================================================
+-- This allows updating payment status, UTR, screenshot URL
+CREATE POLICY "Allow anon update orders"
+ON public.orders
+FOR UPDATE
+TO anon
+USING (true)
+WITH CHECK (true);
 
--- Policy to allow deleting orders (if needed)
-CREATE POLICY "Allow delete orders" ON public.orders
-    FOR DELETE
-    USING (true);
-*/
+-- ============================================================================
+-- PART 2: Storage Bucket RLS Policies for payment-screenshots
+-- ============================================================================
 
--- Verify the RLS status after changes
-SELECT schemaname, tablename, rowsecurity 
-FROM pg_tables 
-WHERE tablename = 'orders' AND schemaname = 'public';
+-- Check if bucket exists
+SELECT * FROM storage.buckets WHERE name = 'payment-screenshots';
 
--- Test insert to verify it works now
+-- If bucket doesn't exist, create it (PRIVATE bucket)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('payment-screenshots', 'payment-screenshots', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Drop existing storage policies
+DROP POLICY IF EXISTS "Allow public upload payment screenshots" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read payment screenshots" ON storage.objects;
+DROP POLICY IF EXISTS "Allow anon upload payment screenshots" ON storage.objects;
+DROP POLICY IF EXISTS "Allow anon read payment screenshots" ON storage.objects;
+
+-- ============================================================================
+-- STORAGE POLICY 1: Allow INSERT (upload) for anonymous users
+-- ============================================================================
+CREATE POLICY "Allow anon upload payment screenshots"
+ON storage.objects
+FOR INSERT
+TO anon
+WITH CHECK (
+    bucket_id = 'payment-screenshots'
+);
+
+-- ============================================================================
+-- STORAGE POLICY 2: Allow SELECT (read) for anonymous users
+-- ============================================================================
+-- This allows viewing uploaded screenshots
+CREATE POLICY "Allow anon read payment screenshots"
+ON storage.objects
+FOR SELECT
+TO anon
+USING (
+    bucket_id = 'payment-screenshots'
+);
+
+-- ============================================================================
+-- STORAGE POLICY 3: Allow UPDATE for anonymous users (optional)
+-- ============================================================================
+CREATE POLICY "Allow anon update payment screenshots"
+ON storage.objects
+FOR UPDATE
+TO anon
+USING (
+    bucket_id = 'payment-screenshots'
+)
+WITH CHECK (
+    bucket_id = 'payment-screenshots'
+);
+
+-- ============================================================================
+-- PART 3: Verify Policies Are Active
+-- ============================================================================
+
+-- Check orders table policies
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'public' AND tablename = 'orders';
+
+-- Check storage policies
+SELECT policyname, permissive, roles, cmd
+FROM pg_policies
+WHERE schemaname = 'storage' AND tablename = 'objects';
+
+-- ============================================================================
+-- PART 4: Test Queries (Optional - for debugging)
+-- ============================================================================
+
+-- Test if you can insert an order (should work now)
+-- Uncomment to test:
+/*
 INSERT INTO public.orders (
     customer_name,
     customer_mobile,
     fuel_type,
     quantity,
-    unit,
-    price_per_liter,
-    customer_location,
-    assigned_pump_id,
-    fuel_cost,
-    delivery_fee,
     total_amount,
-    status
+    status,
+    payment_status,
+    assigned_pump_id
 ) VALUES (
-    'RLS Test Customer',
-    '0000000000',
+    'Test Customer',
+    '9876543210',
     'petrol',
     10,
-    'liters',
-    105.00,
-    'Test Location for RLS',
-    1,
-    1050.00,
-    50.00,
-    1155.00,
-    'pending'
+    1000,
+    'pending',
+    'Pending',
+    1
 ) RETURNING id;
+*/
 
--- Clean up the test record
-DELETE FROM public.orders WHERE customer_name = 'RLS Test Customer';
+-- ============================================================================
+-- IMPORTANT NOTES
+-- ============================================================================
+-- 
+-- 1. These policies use "anon" role which is the default for unauthenticated
+--    users using the anon key from config.js
+--
+-- 2. For production, you should:
+--    - Add authentication (Supabase Auth)
+--    - Restrict policies based on user.id
+--    - Add more granular permissions
+--
+-- 3. Current setup allows ANY anonymous user to:
+--    - Create orders
+--    - Read all orders
+--    - Update any order
+--    - Upload screenshots
+--    This is OK for testing but NOT for production
+--
+-- 4. The storage bucket is PRIVATE, so screenshots are only accessible
+--    via signed URLs or through the policies above
+--
+-- ============================================================================
 
-RAISE NOTICE 'RLS policies fixed successfully! Orders can now be placed.';
+RAISE NOTICE 'RLS policies created successfully!';
+RAISE NOTICE 'Orders table: INSERT, SELECT, UPDATE allowed for anon users';
+RAISE NOTICE 'Storage bucket: INSERT, SELECT, UPDATE allowed for payment-screenshots';
+RAISE NOTICE 'REMINDER: These are permissive policies for testing. Tighten for production!';
